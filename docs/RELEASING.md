@@ -1,6 +1,6 @@
 # 打包与发布
 
-更新：2026-10-04。仓库：[gbs00/markdown2cv](https://github.com/gbs00/markdown2cv)。当前准备 **0.1.1** 发布候选版；GitHub Release 草稿和 Obsidian 社区目录发布是两个独立步骤。
+更新：2026-10-04。仓库：[gbs00/markdown2cv](https://github.com/gbs00/markdown2cv)。当前版本为 [0.1.1](https://github.com/gbs00/markdown2cv/releases/tag/0.1.1)。GitHub Release 与 Obsidian 社区目录发布是两个独立步骤；社区目录尚未提交。
 
 ## 本次已调整
 

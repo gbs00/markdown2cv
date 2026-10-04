@@ -2,7 +2,7 @@
 
 在 Obsidian 原生编辑器中写 Markdown，右侧即时预览 A4 简历，并导出本地 PDF。面向习惯 Markdown、希望自由组织内容且少调整格式的用户。
 
-当前版本：**0.1.1 发布候选版**。已实现桌面端功能；macOS / Obsidian 1.13.7 为验收环境。社区市场尚未上架。
+当前版本：**0.1.1**。已实现桌面端功能；macOS / Obsidian 1.13.7 为验收环境。社区市场尚未上架。
 
 ## 使用方式
 
@@ -18,7 +18,7 @@
 
 ## 安装与更新
 
-尚未上架社区市场。测试安装包通过 GitHub Release 附件分发；正式发布前，草稿只供具有仓库写入权限的协作者检查。
+尚未上架社区市场。请从 [0.1.1 GitHub Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.1) 下载附件并手动安装。
 
 将以下三个文件放入 Vault 的 `.obsidian/plugins/markdown-to-cv/`，然后在 Obsidian 的社区插件设置中启用插件：
 

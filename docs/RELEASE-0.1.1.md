@@ -1,6 +1,6 @@
 # 0.1.1 发布验收
 
-日期：2026-10-04。本次是发布候选包的安装与导出验收，不代表 Obsidian 社区审核已通过。
+日期：2026-10-04。本次是 0.1.1 安装包的安装与导出验收，不代表 Obsidian 社区审核已通过。
 
 ## 环境和产物
 
@@ -57,4 +57,4 @@ python3 scripts/check-font-pdf.py evidence/release-0.1.1/host-results.json
 - 本次宿主脚本指定隔离输出路径，未重新人工操作系统保存对话框。
 - PDF 依赖非公共的 `@electron/remote` 宿主桥接。宿主更新后需复测；缺少接口时保留 HTML 预览并提示无法导出。
 - 不承诺所有 Unicode 姓名用字或所有 ATS/提取器兼容；忽略 PDF `ActualText` 的提取器可能误读同形汉字。
-- GitHub Release 正式发布、仓库公开与社区目录提交/审核属于后续发布步骤。
+- Obsidian 社区目录尚未提交，提交和审核属于后续步骤。GitHub 安装包见 [0.1.1 Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.1)。
