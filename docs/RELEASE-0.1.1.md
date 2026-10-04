@@ -57,4 +57,4 @@ python3 scripts/check-font-pdf.py evidence/release-0.1.1/host-results.json
 - 本次宿主脚本指定隔离输出路径，未重新人工操作系统保存对话框。
 - PDF 依赖非公共的 `@electron/remote` 宿主桥接。宿主更新后需复测；缺少接口时保留 HTML 预览并提示无法导出。
 - 不承诺所有 Unicode 姓名用字或所有 ATS/提取器兼容；忽略 PDF `ActualText` 的提取器可能误读同形汉字。
-- Obsidian 社区目录尚未提交，提交和审核属于后续步骤。GitHub 安装包见 [0.1.1 Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.1)。
+- Obsidian 社区目录已于 2026-10-04 提交，版本 0.1.1、提交 `84b1e21` 的审核状态为 Pending；目录条目尚未公开。审核结果及目录发布仍待完成。GitHub 安装包见 [0.1.1 Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.1)。
