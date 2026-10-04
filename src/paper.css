@@ -1,5 +1,6 @@
 :host { all: initial; display: block; color-scheme: light; }
 .cv-root, .cv-root * { box-sizing: border-box; }
+.cv-source { width: 178mm; }
 .cv-root { font: 400 12px/1.65 "MCV Source Han Sans CN"; font-synthesis: style; color: #192332; text-align: left; letter-spacing: 0; word-break: normal; overflow-wrap: anywhere; }
 .cv-root h1,.cv-root h2,.cv-root h3,.cv-root h4,.cv-root h5,.cv-root h6,.cv-root p,.cv-root ul,.cv-root ol,.cv-root blockquote,.cv-root pre,.cv-root table { padding: 0; border: 0; margin: 0; font-family: inherit; color: inherit; }
 .cv-page { width: 210mm; height: 297mm; padding: 16mm; position: relative; background: white; box-shadow: 0 2px 12px #14243b24; margin: 0 auto 20px; }

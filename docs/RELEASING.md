@@ -1,59 +1,72 @@
 # 打包与发布
 
-更新：2026-10-04。源码仓库为 [gbs00/markdown2cv](https://github.com/gbs00/markdown2cv)，初始为私有仓库。当前版本是 **0.1.0 开发版**；源码推送、手动安装包和社区市场上架是三个独立步骤，尚未创建 GitHub Release 或提交社区审核。
+更新：2026-10-04。仓库：[gbs00/markdown2cv](https://github.com/gbs00/markdown2cv)。当前准备 **0.1.1** 发布候选版；GitHub Release 草稿和 Obsidian 社区目录发布是两个独立步骤。
 
-## 本地打包与手动测试
+## 本次已调整
 
-在仓库根目录运行，需要 Node.js、npm 和 Python 3：
+- 字体随 `main.js` 内嵌，市场安装的三个文件已经包含全部运行资源，不依赖旧 `fonts/` 目录、系统字体或首次联网下载。
+- 字体首次预览才解码，并复用缓存；预览 DOM 不插入大段 base64。PDF 仍内嵌同一份原始字节。
+- 源码使用 MIT，思源黑体保持 SIL OFL 1.1；两份完整许可和字体来源均保存在安装文件中。
+- 作者设为 `gbs00`，最低 Obsidian 版本收敛为已测试的 `1.13.7`；桌面限制保留。
+- 发布构建去除内联 sourcemap，校验版本、字体字节、许可及 ZIP；GitHub Actions 自动执行检查并保留产物，不自动发布。
+- 接入官方 ESLint 推荐配置。两处针对文件的例外有明确说明：排版器保留显式 ownerDocument 的原生 DOM 创建；纯取消逻辑保留 Node 和浏览器共用的 globalThis 定时器。PDF 桥接的延迟 require 也保留了原因说明。
+
+## 可重复构建
+
+需要 Node.js 24、npm、Python 3。在仓库根目录运行：
 
 ```sh
 npm ci
-npm test
-npm run package:manual
+npm run check:release
 ```
 
-`package:manual` 会进行类型检查、构建不含内联 sourcemap 的插件，并生成：
+产物目录：
 
 ```text
-release/markdown-to-cv-0.1.0-manual.zip
-release/markdown-to-cv-0.1.0-manual.zip.sha256
-```
-
-ZIP 内部结构：
-
-```text
-markdown-to-cv/
+release/0.1.1/
   main.js
   manifest.json
   styles.css
-  fonts/
-    SourceHanSansCN-VF.ttf.woff2
-    LICENSE.txt
-    SOURCE.md
+  markdown-to-cv-0.1.1.zip
+  SHA256SUMS.txt
 ```
 
-解压后，将完整 `markdown-to-cv` 目录放到一个测试 Vault 的 `.obsidian/plugins/`，重新加载 Obsidian，在社区插件设置中启用 Markdown to CV。先验证新建、预览、修改、照片和导出 PDF。现有用户笔记不包含在 ZIP 中。
+ZIP 内只有 `markdown-to-cv/main.js`、`manifest.json`、`styles.css`。同一份文件同时用于手动安装和社区安装；不要使用 GitHub 自动生成的源码压缩包安装插件。
 
-脚本会核对版本、字体 SHA-256、ZIP 完整性以及全部文件内容。它只生成本地文件，不发布 Release，也不安装到任何 Vault。此 ZIP 支持完整目录的手动安装，不能直接作为社区市场安装包。
+官方安装器只下载三个指定文件，因此不能仅上传 ZIP，也不能依赖单独的字体附件。[官方文件下载规则](https://github.com/obsidianmd/obsidian-releases#how-community-plugins-are-pulled)
 
-## 社区市场所需文件
+## 发布验收
 
-官方安装器按 GitHub Release 的版本标签下载 `main.js`、`manifest.json` 和可选的 `styles.css`。只上传源码或 ZIP 不足以完成市场安装，字体等独立附加目录也不会随这三个文件自动安装。[官方文件下载规则](https://github.com/obsidianmd/obsidian-releases#how-community-plugins-are-pulled)
+```sh
+npm run prepare:release-test
+# 把输出目录作为独立 Vault 打开，仅在此测试 Vault 启用 Markdown to CV
+npm run test:release-host
+```
 
-## 当前发布前差距
+脚本从待发布文件创建全新安装，校验目录与标记后才运行。检查字体按需加载、原始字节 hash、缓存复用、断网预览及真实 PDF、照片、缩放、卸载和重载。原始证据在 `evidence/release-0.1.1/`，PDF 在 `output/pdf/release-0.1.1/`，均不上传。
 
-- **字体打包：** 当前 `src/main.ts` 从插件目录读取 `fonts/SourceHanSansCN-VF.ttf.woff2`，手动完整安装可以工作，但市场安装会缺失它。上架前需改为把字体内嵌进安装器支持的文件，并调整预览与 PDF 的共享加载路径。例如打进 `main.js`，或以 data URL 放入 CSS 并处理 Shadow DOM 的加载。仍需保留字体许可及来源；不采用首次启动下载字体的方式。
-- **字体验收：** 必须用只含上述三个安装文件的全新 Vault，断网验证 400/500/700 字重、照片、分页和 PDF；测量打包后的启动开销、内存与体积，不能沿用独立字体目录方案的结果。
-- **插件许可证：** 仓库尚未选择源码许可证。思源黑体的 SIL OFL 1.1 只覆盖字体，不能替代插件根目录 `LICENSE`。发布前需确定源码许可证、补全作者信息，并在分发产物保留字体许可。[官方许可与披露要求](https://docs.obsidian.md/community-directory/developer-policies)
-- **兼容边界：** `isDesktopOnly: true` 保持不变；当前只在 macOS 27.0 / Obsidian 1.13.7 验证，未验收 Windows/Linux 或移动端。`minAppVersion: 1.13.0` 仍需实测确认。PDF 使用非公共宿主桥接 `@electron/remote`，需检查目标版本可用性及失败提示，不能把当前可用等同于永久稳定。
-- **产品验收：** 补真实中文输入法、常见主题、长时间使用、真实用户任务和干净安装/升级测试。具体状态见 [验收矩阵](ACCEPTANCE.md)。
-- **公开前整理：** 确认插件 ID 在社区唯一；完善 README、作者、版本说明及源码许可，随后将仓库设为公开。当前仓库不包含测试 Vault、个人简历、原始截图、日志及导出 PDF。
+PDF 进一步用 Poppler 和 macOS PDFKit 检查逐页文字、搜索、链接、页数及字体内嵌，并渲染成图片检查布局。结果和剩余验收见 [0.1.1 发布验收](RELEASE-0.1.1.md)。
 
-## 首次上架流程
+## 创建 GitHub Release
 
-1. 完成上述差距，让公开仓库根目录包含准确的 `README.md`、`LICENSE`、`manifest.json`。当前插件 ID 是 `markdown-to-cv`，与 GitHub 仓库名不同没有关系。
-2. 更新 `manifest.json` 和 `package.json` 的版本，维护 `versions.json` 中的最低 Obsidian 版本映射，构建并检查。创建 GitHub Release，标签必须与 manifest 版本完全相同，例如 `0.1.0`，不要写成 `v0.1.0`。给 Release 单独上传 `main.js`、`manifest.json`、`styles.css`；确认这些文件自身包含运行所需资源。[官方提交指南](https://docs.obsidian.md/plugins/releasing/submit-plugin)
-3. 登录 [Obsidian Community](https://community.obsidian.md)，关联 GitHub 账号，在 **Plugins → New plugin** 中填写仓库地址、选择所有者，确认开发者政策后提交。[官方账号与提交说明](https://docs.obsidian.md/community-directory/set-up-and-claim)
-4. 根据目录中的自动审核反馈修改代码、递增版本并发布新 Release。解决错误后完成发布，用户才可在 Obsidian 内搜索安装。按当前官方流程使用 Community 网站提交，不按旧教程向 `obsidian-releases` 发插件登记 PR。[官方审核流程](https://docs.obsidian.md/plugins/releasing/submit-plugin)
+1. 确认代码已推送，CI 通过；`manifest.json`、`package.json`、`versions.json` 及产物版本一致。
+2. 标签使用 **`0.1.1`**，不要加 `v`。将三个安装文件分别作为附件上传，可以额外附 ZIP 和校验清单。
+3. 先创建草稿核对发布说明和资产，再决定公开仓库及发布 Release。公开前检查是否包含个人资料；本仓库忽略 Vault、截图、日志与导出文件。
+4. 用最终 Release 附件再做一次下载、hash 和安装验证，避免上传错版本。
 
-后续更新通过新的 GitHub Release 提供，标签、根目录 manifest 和发布资产中的版本保持一致；兼容性发生变化时维护 `versions.json`。发布之前始终从真实发布资产做一次干净安装验证。
+版本标签必须与根目录及资产 manifest 一致；社区安装依靠 Release 附件，而非源码目录中的构建文件。[官方提交指南](https://docs.obsidian.md/plugins/releasing/submit-plugin)
+
+## 提交 Obsidian 社区目录
+
+用 Obsidian 账号登录 [Obsidian Community](https://community.obsidian.md)，关联 GitHub，在 **Plugins → New plugin** 填写仓库地址、选择所有者，并确认开发者政策后提交。按当前官方说明使用此入口，不沿用向旧插件列表提 PR 的教程。[官方账号与提交说明](https://docs.obsidian.md/community-directory/set-up-and-claim)
+
+目录会读取默认分支的 manifest 并审核。根据反馈修正，递增版本后发布新 Release；审核通过并完成发布后，用户才可以在应用内安装。[官方审核流程](https://docs.obsidian.md/plugins/releasing/submit-plugin)
+
+后续更新通过 GitHub Release 提供，标签、根目录 manifest 和附件版本保持一致。兼容门槛变化时维护 `versions.json`。源码许可证和字体许可都应持续保留。[官方许可与披露要求](https://docs.obsidian.md/community-directory/developer-policies)
+
+## 仍需验证的范围
+
+- Windows/Linux 未验收；Android/iOS 明确不支持。
+- 真正的中文输入法组字、常见第三方主题、长时间稳定性与真实用户任务仍需人工/扩展验收。
+- PDF 依赖宿主非公共 `@electron/remote` 桥接，应在每次升级 Obsidian 后复核；HTML 预览保留清晰的失败处理。
+- 不能把打包、静态检查和开发样例测试等同于社区已审核或所有用户体验均已验收。

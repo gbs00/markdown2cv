@@ -26,5 +26,4 @@ for (const name of ['main.js', 'manifest.json', 'styles.css']) {
   await writeFile(path.join(config, 'plugins', 'markdown-to-cv', name), await readFile(path.join(root, 'dist', name)));
 }
 await rm(path.join(config, 'plugins', 'markdown-to-cv', 'fonts'), { recursive: true, force: true });
-await cp(path.join(root, 'dist', 'fonts'), path.join(config, 'plugins', 'markdown-to-cv', 'fonts'), { recursive: true });
 console.log(`Deployed only to ${vault}`);

@@ -31,3 +31,4 @@
 .mcv-export-status { padding: 8px 16px; font-size: 12px; color: var(--text-muted); }
 .mcv-export-status:empty { display: none; }
 .mcv-measure { position: fixed !important; left: -20000px !important; top: 0 !important; visibility: hidden !important; width: 210mm !important; pointer-events: none !important; }
+.markdown-to-cv-view .mcv-viewport > .mcv-paper { width: 210mm; margin-inline: auto; }

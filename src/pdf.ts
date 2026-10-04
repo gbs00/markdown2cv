@@ -26,6 +26,7 @@ interface Remote {
 function bridge(): Remote {
   try {
     // Externalized: use host's bridge; never install/initialize/patch its main process.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Lazy capability detection keeps HTML preview available if the optional host bridge is absent.
     const remote = require('@electron/remote') as Remote;
     if (typeof remote.BrowserWindow !== 'function' || !remote.dialog?.showSaveDialog) throw new Error('missing capability');
     return remote;

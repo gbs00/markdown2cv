@@ -19,7 +19,7 @@ export class ResumeFonts {
     if (this.disposed) return Promise.reject(new Error('简历字体资源已释放，请重新打开预览。'));
     return this.data ??= this.read().catch(() => {
       this.data = null;
-      throw new Error('无法读取插件内置的思源黑体，请重新安装完整插件（包含 fonts 目录）。');
+      throw new Error('无法读取插件内置的思源黑体，请重新安装插件。');
     });
   }
 

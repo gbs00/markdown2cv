@@ -120,3 +120,11 @@ CV-03：真实中文 IME；CV-09：长时稳定性、真实输入响应和1–3�
 - [最终重载保护](../evidence/preview-ui-20261004/final-reload.json)
 - [PDF 元信息](../evidence/preview-ui-20261004/pdf-info.txt)
 - [实际工具栏](../evidence/preview-ui-20261004/toolbar-final.png)
+
+## 2026-10-04 发布准备 0.1.1
+
+采用用户确认的 MIT 源码许可；思源黑体继续保留独立 SIL OFL。字体改为在 `main.js` 内嵌原始 WOFF2，首次预览解码并缓存；市场安装所需的三个文件已包含全部运行资源与许可，不再依赖字体目录。旧字体接入记录作为历史保留。
+
+完善 manifest、版本映射、README、变更日志、确定性 ZIP 和 SHA-256 清单；接入官方 Obsidian ESLint 推荐配置及 GitHub Actions。最低宿主版本设为已测试的 1.13.7，桌面限制保留。
+
+独立 Vault 的三文件安装、按需字体加载、缓存复用、CDP 离线预览/照片/PDF、缩放、卸载重载检查通过；标准、跨页和照片共三份 PDF 的文字、链接、资源及四页视觉核对通过。详见 [发布验收](RELEASE-0.1.1.md)与[发布流程](RELEASING.md)。实际简历、截图、PDF 和原始证据均不上传。

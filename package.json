@@ -1,19 +1,30 @@
 {
   "name": "markdown-to-cv",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
-  "description": "Local Obsidian desktop resume preview and PDF export development build",
+  "description": "Create resumes from Markdown with live A4 previews and local PDF export.",
+  "license": "MIT",
+  "author": "gbs00",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gbs00/markdown2cv.git"
+  },
   "scripts": {
     "dev": "node scripts/build.mjs --watch",
     "build": "npm run typecheck && node scripts/build.mjs",
     "build:release": "npm run typecheck && node scripts/build.mjs --release",
-    "package:manual": "npm run build:release && python3 scripts/package.py",
+    "package": "npm run build:release && python3 scripts/package.py",
+    "package:manual": "npm run package",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test.mjs",
     "deploy:dev": "node scripts/deploy.mjs",
     "test:host": "node scripts/host-tests.mjs",
     "check": "npm run typecheck && npm test && npm run build",
+    "lint": "eslint src --max-warnings=0",
+    "check:release": "npm run lint && npm test && npm run package",
+    "prepare:release-test": "node scripts/prepare-release-vault.mjs",
+    "test:release-host": "node scripts/release-host-tests.mjs",
     "test:pdf": "node scripts/pdf-tests.mjs",
     "test:font": "node scripts/font-host-tests.mjs && node scripts/pdf-tests.mjs --font",
     "test:photo": "node scripts/photo-host-tests.mjs",
@@ -21,12 +32,21 @@
     "test:preview-ui": "node scripts/preview-ui-host-tests.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@eslint/json": "0.14.0",
     "@types/node": "22.15.17",
     "esbuild": "0.28.2",
+    "eslint": "10.12.0",
+    "eslint-plugin-obsidianmd": "0.4.2",
     "obsidian": "1.13.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0"
   },
   "overrides": {
-    "moment": "2.31.0"
+    "moment": "2.31.0",
+    "eslint-plugin-obsidianmd": {
+      "obsidian": "$obsidian",
+      "eslint": "$eslint"
+    }
   }
 }

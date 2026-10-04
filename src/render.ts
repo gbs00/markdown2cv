@@ -27,7 +27,7 @@ function semanticBlocks(container: HTMLElement): HTMLElement[] {
       }
       continue;
     }
-    if (!(node instanceof HTMLElement)) continue;
+    if (!(node.instanceOf(HTMLElement))) continue;
     if (node.matches('style,script,button,.frontmatter,.metadata-container')) continue;
     if (node.tagName === 'DIV' && (Array.from(node.classList).some(c => c.startsWith('el-')) || node.classList.contains('markdown-preview-section'))) result.push(...semanticBlocks(node));
     else result.push(node);
@@ -201,7 +201,7 @@ export async function renderResume(app: App, snapshot: Snapshot, owner: Componen
   const host = doc.createElement('div'); host.className = 'mcv-measure';
   const shadow = host.attachShadow({ mode: 'open' });
   const style = doc.createElement('style'); style.textContent = paperCss; shadow.append(style);
-  const source = doc.createElement('div'); source.className = 'cv-root'; source.style.width = '178mm'; shadow.append(source);
+  const source = doc.createElement('div'); source.className = 'cv-root cv-source'; shadow.append(source);
   const pages = doc.createElement('div'); pages.className = 'cv-root cv-pages'; shadow.append(pages);
   doc.body.append(host);
   const prepared = prepareMarkdown(snapshot.text);
@@ -231,14 +231,15 @@ export async function exportHtml(rendered: RenderedResume, signal: AbortSignal):
       continue;
     }
     for (const attr of Array.from(el.attributes)) if (/^on/i.test(attr.name) || attr.name === 'style') el.removeAttribute(attr.name);
-    if (el instanceof HTMLAnchorElement && !/^(https?:|mailto:|tel:)/i.test(el.getAttribute('href') ?? '')) el.removeAttribute('href');
+    if (el.instanceOf(HTMLAnchorElement) && !/^(https?:|mailto:|tel:)/i.test(el.getAttribute('href') ?? '')) el.removeAttribute('href');
   }
   for (const img of Array.from(copy.querySelectorAll('img'))) {
     const src = img.getAttribute('src') ?? '';
     if (src.startsWith('data:')) continue;
     if (!src.startsWith('app://')) throw new Error('开发版 PDF 仅支持已加载的本地附件图片；请将远程图片保存到 Vault 后重试。');
-    const blob = await abortable(fetch(src, { signal }).then(r => { if (!r.ok) throw new Error('本地图片读取失败'); return r.blob(); }), signal);
-    img.src = await abortable(new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new Error('本地图片转换失败')); reader.readAsDataURL(blob); }), signal);
+    // Only local app:// attachments; requestUrl cannot read this Vault protocol.
+    const blob = await abortable(img.ownerDocument.win.fetch(src, { signal }).then(r => { if (!r.ok) throw new Error('本地图片读取失败'); return r.blob(); }), signal);
+    img.src = await abortable(new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => { if (typeof reader.result === 'string') resolve(reader.result); else reject(new Error('本地图片转换失败')); }; reader.onerror = () => reject(new Error('本地图片转换失败')); reader.readAsDataURL(blob); }), signal);
   }
   const fontCss = await rendered.fonts.css(signal);
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:"><title>Markdown to CV</title><style>${fontCss}\n${paperCss}</style></head><body>${copy.outerHTML}</body></html>`;

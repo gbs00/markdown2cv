@@ -17,7 +17,7 @@ export class ResumeView extends ItemView {
   readonly metrics = { renders: [] as number[], exports: [] as number[], commits: 0 };
   lastExport: { status: string; source: string; path?: string; milliseconds: number; message?: string } | null = null;
   private gate = new RevisionGate();
-  private timer: ReturnType<typeof setTimeout> | null = null;
+  private timer: number | null = null;
   private rendering: AbortController | null = null;
   private exporting: AbortController | null = null;
   private viewport!: HTMLElement;
@@ -98,7 +98,7 @@ export class ResumeView extends ItemView {
   }
   sourceDeleted(): void {
     this.source = null; this.gate.invalidate(); this.rendering?.abort();
-    if (this.timer) clearTimeout(this.timer);
+    if (this.timer) this.contentEl.win.clearTimeout(this.timer);
     this.current?.dispose(); this.current = null;
     this.viewport.empty(); this.issues.empty(); this.sourceLabel.textContent = '源笔记已删除'; this.status.textContent = '请选择另一篇 Markdown 笔记。'; this.exportButton.disabled = true;
     this.sourceLabel.removeAttribute('title'); this.repairButton.disabled = true; this.updateZoomControls();
@@ -109,11 +109,11 @@ export class ResumeView extends ItemView {
     const file = this.source;
     const started = performance.now();
     this.rendering?.abort();
-    if (this.timer) clearTimeout(this.timer);
+    if (this.timer) this.contentEl.win.clearTimeout(this.timer);
     const metadata = this.current ? `A4 · ${this.current.pageCount} 页` : '';
     if (this.status.textContent !== metadata) this.status.textContent = metadata;
     this.status.dataset.state = 'updating';
-    this.timer = setTimeout(() => {
+    this.timer = this.contentEl.win.setTimeout(() => {
       this.timer = null;
       void this.update(snapshot ? Promise.resolve(snapshot) : this.plugin.capture(file), ticket, started);
     }, 70);
@@ -157,7 +157,7 @@ export class ResumeView extends ItemView {
     const width = this.viewport.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
     const scale = this.zoomLevel ?? Math.min(1, Math.max(0.15, width / PAGE_WIDTH));
     const host = this.current.host;
-    host.style.width = '210mm'; host.style.marginInline = 'auto'; host.style.zoom = String(scale);
+    host.addClass('mcv-paper'); host.style.zoom = String(scale);
     this.displayScale = scale;
     if (anchor) {
       const viewport = this.viewport.getBoundingClientRect(), page = host.getBoundingClientRect();
@@ -225,7 +225,7 @@ export class ResumeView extends ItemView {
     }
   }
   async onClose(): Promise<void> {
-    this.closed = true; this.gate.invalidate(); if (this.timer) clearTimeout(this.timer);
+    this.closed = true; this.gate.invalidate(); if (this.timer) this.contentEl.win.clearTimeout(this.timer);
     this.rendering?.abort(); this.exporting?.abort(); this.current?.dispose(); this.current = null;
   }
 }

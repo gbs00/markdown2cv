@@ -163,10 +163,10 @@ export async function abortable<T>(promise: Promise<T>, signal: AbortSignal, tim
     return await Promise.race([promise, new Promise<never>((_, reject) => {
       onAbort = () => reject(new DOMException('操作已取消', 'AbortError'));
       signal.addEventListener('abort', onAbort, { once: true });
-      timer = setTimeout(() => reject(new Error('等待资源或排版超时，请检查内容后重试。')), timeoutMs);
+      timer = globalThis.setTimeout(() => reject(new Error('等待资源或排版超时，请检查内容后重试。')), timeoutMs);
     })]);
   } finally {
-    if (timer) clearTimeout(timer);
+    if (timer) globalThis.clearTimeout(timer);
     signal.removeEventListener('abort', onAbort);
   }
 }

@@ -5,7 +5,8 @@ import { ResumeView, VIEW_TYPE } from './view';
 import { PdfService } from './pdf';
 import { repairMarkdown } from './model';
 import type { Snapshot } from './model';
-import { FONT_FILE, ResumeFonts } from './fonts';
+import { ResumeFonts } from './fonts';
+import { readBundledFont } from './bundled-font';
 import { renderResume } from './render';
 import type { RenderedResume } from './render';
 
@@ -17,10 +18,7 @@ export default class MarkdownToCvPlugin extends Plugin {
   private repairBusy = false;
   private ribbonMenu: Menu | null = null;
   async onload(): Promise<void> {
-    this.fonts = new ResumeFonts(() => {
-      if (!this.manifest.dir) throw new Error('插件目录不可用');
-      return this.app.vault.adapter.readBinary(normalizePath(`${this.manifest.dir}/fonts/${FONT_FILE}`));
-    });
+    this.fonts = new ResumeFonts(readBundledFont);
     this.register(() => this.fonts.dispose());
     this.registerView(VIEW_TYPE, leaf => new ResumeView(leaf, this));
     const ribbon = this.addRibbonIcon('file-user', '新建简历（右键更多操作）', () => this.run(() => this.createResume()));

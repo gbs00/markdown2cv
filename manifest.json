@@ -1,9 +1,10 @@
 {
   "id": "markdown-to-cv",
   "name": "Markdown to CV",
-  "version": "0.1.0",
-  "minAppVersion": "1.13.0",
-  "description": "Turn Markdown notes into paginated resume previews and local PDFs. Desktop development build.",
-  "author": "Markdown to CV",
+  "version": "0.1.1",
+  "minAppVersion": "1.13.7",
+  "description": "Create resumes from Markdown with live A4 previews and local PDF export.",
+  "author": "gbs00",
+  "authorUrl": "https://github.com/gbs00",
   "isDesktopOnly": true
 }

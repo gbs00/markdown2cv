@@ -1,11 +1,12 @@
 """Inspect only the isolated font-check outputs. Respect PDF ActualText; never NFKC."""
 from pathlib import Path
-import json, re, shutil, subprocess
+import json, re, shutil, subprocess, sys
 from pypdf import PdfReader
 
 root = Path(__file__).resolve().parent.parent
 evidence = root / 'evidence/source-han-font'
-host_path = evidence / 'host-results.json'
+host_path = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else evidence / 'host-results.json'
+evidence = host_path.parent
 host = json.loads(host_path.read_text())
 assert host['status'] == 'complete', 'Background host check did not finish'
 pdftotext = shutil.which('pdftotext')
@@ -33,13 +34,25 @@ for item, kit in zip(host['fixtures'], pdfkit):
     actual = [content_only(subprocess.check_output([pdftotext, '-f', str(i+1), '-l', str(i+1), '-enc', 'UTF-8', str(file), '-'], text=True)) for i in range(len(reader.pages))]
     kit_pages = [content_only(page) for page in kit['pages']]
     expected = item['pageText']
+    # PDFKit represents this fixture's tagged photo with U+FFFC, an object
+    # replacement character absent from DOM text and Poppler's text output.
+    # Account for that one verified image object; never normalize source Hanzi.
+    image_counts = [len(page.images) for page in reader.pages]
+    object_counts = [page.count('\ufffc') for page in kit_pages]
+    expected_objects = [int(item['name'] == 'photo' and i == 0) for i in range(len(kit_pages))]
+    objects_accounted_for = object_counts == expected_objects and all(
+        count == 0 or (image_counts[i] == count and '\ufffc' not in expected[i])
+        for i, count in enumerate(object_counts)
+    )
+    kit_text = [page.replace('\ufffc', '') if objects_accounted_for else page for page in kit_pages]
     all_text = text_only(''.join(actual))
     fonts = [font.get_object() for page in reader.pages for font in page['/Resources']['/Font'].values()]
     links = [str(annotation.get_object().get('/A', {}).get('/URI', '')) for page in reader.pages for annotation in page.get('/Annots', []) if annotation.get_object().get('/Subtype') == '/Link']
     checks = {
         'page_count_matches_preview': len(actual) == len(expected) == item['previewPages'],
         'poppler_per_page_codepoints': len(actual) == len(expected) and all(text_only(a) == text_only(b) for a,b in zip(actual,expected)),
-        'pdfkit_per_page_codepoints': len(kit_pages) == len(expected) and all(text_only(a) == text_only(b) for a,b in zip(kit_pages,expected)),
+        'pdfkit_image_objects_accounted_for': objects_accounted_for,
+        'pdfkit_per_page_codepoints': len(kit_text) == len(expected) and all(text_only(a) == text_only(b) for a,b in zip(kit_text,expected)),
         'ordinary_hanzi_exact': '工作方向页面长' in all_text,
         'literal_radicals_preserved': '⼯⽅⻚⾯⻓' in all_text,
         'pdfkit_search_and_selection': all(value['matches'] > 0 and value['exactSelection'] for value in kit['searches'].values()),
@@ -48,7 +61,9 @@ for item, kit in zip(host['fixtures'], pdfkit):
         'a4_pages': all(abs(float(page.mediabox.width)-595.28)<1 and abs(float(page.mediabox.height)-841.89)<2 for page in reader.pages),
         'offline_font_sources': item['offlineFontSources'],
     }
-    result = {'name':item['name'], 'file':str(file), 'checks':checks, 'fontTypes':sorted(set(str(font.get('/Subtype')) for font in fonts)), 'actualTextSpans':sum(page.get_contents().get_data().count(b'/ActualText') for page in reader.pages), 'links':links, 'pdfkitSearches':kit['searches'], 'textNormalization':'Compare DOM text, ignoring whitespace only. CSS disc shapes are not text. No Unicode normalization, bullet stripping, or replacement.'}
+    if item['name'] == 'photo':
+        checks['embedded_photo'] = image_counts[0] == 1
+    result = {'name':item['name'], 'file':str(file), 'checks':checks, 'fontTypes':sorted(set(str(font.get('/Subtype')) for font in fonts)), 'actualTextSpans':sum(page.get_contents().get_data().count(b'/ActualText') for page in reader.pages), 'links':links, 'pdfkitSearches':kit['searches'], 'pdfkitImageObjects':object_counts, 'embeddedImages':image_counts, 'textNormalization':'Compare DOM text ignoring layout whitespace. For the photo fixture only, separately verify and omit PDFKit’s single U+FFFC image-object placeholder. No source-character normalization or replacement.'}
     if not checks['poppler_per_page_codepoints'] or not checks['pdfkit_per_page_codepoints']:
         result['comparison'] = {'preview':expected, 'poppler':actual, 'pdfkit':kit_pages}
     results.append(result)
@@ -57,4 +72,4 @@ for item, kit in zip(host['fixtures'], pdfkit):
 (evidence/'pdf-results.json').write_text(json.dumps(results, ensure_ascii=False, indent=2))
 for result in results:
     print(result['name'], json.dumps(result['checks'], ensure_ascii=False))
-assert len(results) == 2 and all(all(result['checks'].values()) for result in results), 'PDF checks failed'
+assert len(results) == len(host['fixtures']) >= 2 and all(all(result['checks'].values()) for result in results), 'PDF checks failed'
