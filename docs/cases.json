@@ -1,0 +1,378 @@
+[
+  {
+    "id": "CV-01",
+    "name": "新建简历",
+    "behavior": "通过按钮或命令创建五模块 Markdown 笔记，打开关联预览；快捷键由用户自行绑定。",
+    "priority": "P0",
+    "expected": "新笔记含模板字段与属性，预览对应新文件；未强制占用默认快捷键。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "点击新建简历/运行命令；比对模板全文，核对关联文件与默认快捷键。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-02",
+    "name": "已有笔记预览",
+    "behavior": "从当前或选定的 Markdown 文件打开预览，不要求模板来源或模板属性。",
+    "priority": "P0",
+    "expected": "无模板属性的普通笔记可进入预览，内容正常呈现。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "打开 02-ordinary.md，运行打开预览；核对无属性也显示标题、列表、引用和链接。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-03",
+    "name": "原生编辑与基础渲染（复用宿主）",
+    "behavior": "沿用 Obsidian 编辑器和基础 Markdown 呈现，插件只增加简历结构适配。",
+    "priority": "P0",
+    "expected": "中文输入、粘贴、撤销重做可继续使用，标题、段落、列表和链接正确呈现。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "部分通过；待人工/扩展验收",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/native-input.json"
+    ],
+    "steps": "在 qa-runtime/native-input.md 原生粘贴中英文，⌘Z、⇧⌘Z；另做真实中文输入法组字验收。",
+    "actual": "原生粘贴/撤销/重做与程序化中文编辑通过；真实拼音输入法组字、候选选择待人工验收。"
+  },
+  {
+    "id": "CV-04",
+    "name": "五模块识别与布局",
+    "behavior": "按下方字段表识别基础信息、工作、项目、教育和技能，形成初步简历布局。",
+    "priority": "P0",
+    "expected": "默认模板五模块字段齐全、归属正确；学历按自由文本展示。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "打开 01-standard.md；核对姓名、五模块与自由学历文本。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-05",
+    "name": "自由章节与多条经历",
+    "behavior": "通过 Markdown 增删、改名、调整模块顺序，复制或增删经历记录；不锁定为表单。",
+    "priority": "P0",
+    "expected": "自定义章节和多条工作／项目／教育记录按源文档顺序呈现。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "打开 03-free-structure.md；核对改名/重排/自定义章节及重复记录顺序。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-06",
+    "name": "字段容错与空值收起",
+    "behavior": "字段顺序尽量宽容；按当前 PRD 收起空填入字段，作品集或博客未填时保持空值。",
+    "priority": "P0",
+    "expected": "调换字段顺序后仍正确归属；空字段不留标签或分隔符，源笔记不被改写。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/build-and-unit.log"
+    ],
+    "steps": "打开 06-empty-fields.md；空标签应收起六项，有正文的工作内容标签保留，源文件不改。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-07",
+    "name": "HTML 实时更新",
+    "behavior": "使用最新编辑内容更新右侧 HTML，包含未落盘修改；编辑过程不生成 PDF。",
+    "priority": "P0",
+    "expected": "连续修改可在 HTML 中看到最新内容，无须等待文件落盘。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "原生编辑器立即 setValue，尚未落盘时取快照；等待 HTML 更新并核对最新文本。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-08",
+    "name": "笔记关联与版本保护",
+    "behavior": "预览明确对应源笔记；快速切换或旧结果晚返回时，不混入其他笔记或覆盖新版本。",
+    "priority": "P0",
+    "expected": "两份笔记交替编辑后各自内容正确，旧版本不能倒退覆盖。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/build-and-unit.log"
+    ],
+    "steps": "连续编辑 12 次，再在活动原生标签快速 A/B/A/B/A 切换；核对最后关联及内容。逻辑测试额外验证旧结果晚到。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-09",
+    "name": "实时预览与输入响应",
+    "behavior": "同一笔记更新时保留上一版预览，正常渲染静默完成；常规元数据只显示纸张与页数，新结果就绪后替换，输入优先。",
+    "priority": "P1",
+    "expected": "正常编辑不显示刷新或成功状态，无反复清空闪烁；切换文件时不把旧笔记冒充新结果，必要错误仍可见。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "部分通过；待人工/扩展验收",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "更新的 70 ms 合并窗口中检查上一版仍可见；记录 12 次程序化编辑到预览延迟；真实 IME/30 分钟另测。",
+    "actual": "保留上一版和短时基线通过；真实输入响应、1–3 页大样本及30分钟稳定性未测。"
+  },
+  {
+    "id": "CV-10",
+    "name": "异常内容展示与定位",
+    "behavior": "未识别或局部损坏内容尽可能按普通 Markdown／文本展示并提示位置，其余内容继续预览。",
+    "priority": "P0",
+    "expected": "损坏一处结构后其余部分仍可见，原内容不被静默丢弃，提示可定位。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/build-and-unit.log"
+    ],
+    "steps": "打开 05-damaged.md，点击诊断定位原行；动态 HTML/查询以源码文本回退，不静默丢弃。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-11",
+    "name": "默认简历样式",
+    "behavior": "提供一套样式管理字体、对齐、间距与页边距；项目四级标题可紧凑展示，排版不依赖易误删的正文标记。",
+    "priority": "P0",
+    "expected": "五模块视觉层级清楚，默认排版可直接用于简历，正文仍可自由编辑。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "evidence/source-han-font/host-results.json",
+      "evidence/source-han-font/pdf-results.json",
+      "evidence/source-han-font/visual-review.json"
+    ],
+    "steps": "查看 standard.pdf 与 HTML；核对 A4、16 mm 页边距、层级、字体与间距。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-12",
+    "name": "宿主主题隔离",
+    "behavior": "尽量隔离宿主主题对简历布局的影响；常见主题的具体兼容范围待定。",
+    "priority": "P1",
+    "expected": "在默认及约定主题下，字体、间距和纸张布局符合相同规则。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "部分通过；待人工/扩展验收",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "向宿主文档临时施加冲突 CSS，检查 Shadow DOM 字号/颜色/页数不变；常见第三方主题另测。",
+    "actual": "默认主题与冲突CSS隔离通过；常见第三方主题清单及切换实测未完成。"
+  },
+  {
+    "id": "CV-13",
+    "name": "真实纸张与页数",
+    "behavior": "HTML 预览显示纸张边界、分页和页数，内容变化后更新。",
+    "priority": "P0",
+    "expected": "增删跨页内容后页界和页数正确，屏幕呈现可用于判断最终版式。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/pdf-results.json",
+      "../output/pdf/"
+    ],
+    "steps": "依次打开一页标准、两页分页和两页超长段落；核对 DOM 页数及实际 PDF 页数。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-14",
+    "name": "跨页排版",
+    "behavior": "尽量避免章节标题孤立在页末，长经历允许合理跨页。",
+    "priority": "P0",
+    "expected": "页末标题、长段落和长列表样例无缺失或裁切，跨页仍可读。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/pdf-results.json",
+      "../output/pdf/"
+    ],
+    "steps": "检查任务 01–28、页末标题和 180 句超长段落；检查 HTML 溢出量与 PDF 每页文字顺序、页面图像。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-15",
+    "name": "导出当前版本 PDF",
+    "behavior": "点击导出时固定当前完整内容，包含未落盘修改；等待字体等资源与布局就绪，后续编辑不改变本次输出。",
+    "priority": "P0",
+    "expected": "资源未就绪不会导出半成品；导出期间继续编辑，PDF 仍对应点击时版本。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/pdf-results.json",
+      "../output/pdf/"
+    ],
+    "steps": "点击时写入 V1 未保存内容，开始导出后改为 V2；PDF 只能含 V1；本地图片加载后导出。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-16",
+    "name": "预览与 PDF 一致",
+    "behavior": "共享内容、字体、纸张和分页规则，并实际验收屏幕与打印结果；空字段同样收起。",
+    "priority": "P0",
+    "expected": "PDF 与 HTML 的内容、字体、间距、换行、页数及分页一致，无空标签、裁切或缺失。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/pdf-results.json",
+      "../output/pdf/",
+      "evidence/source-han-font/host-results.json",
+      "evidence/source-han-font/pdf-results.json",
+      "evidence/source-han-font/visual-review.json"
+    ],
+    "steps": "对三份 PDF 与对应 HTML 逐页去空白比较文字顺序，不做 Unicode 兼容归一化；检查字体与视觉布局。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-17",
+    "name": "PDF 文字与链接",
+    "behavior": "中文及中英混排正常；文字可选中、搜索，外链可点击，复制后的阅读顺序合理。",
+    "priority": "P0",
+    "expected": "同时通过视觉检查、文本提取／复制、搜索与链接点击检查。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/pdf-results.json",
+      "../output/pdf/"
+    ],
+    "steps": "pypdf 提取中英文，检查字符准确/阅读顺序/URI 注释；人工翻页检查字形及长链接。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-18",
+    "name": "导出状态与异常处理",
+    "behavior": "展示导出状态，支持取消；失败明确反馈并允许重试，不扩展复杂导出管理。",
+    "priority": "P0",
+    "expected": "取消不误报成功；写入失败可知原因并重试，成功反馈对应实际生成文件。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/native-dialog-cancel.json",
+      "../evidence/build-and-unit.log"
+    ],
+    "steps": "原生保存对话框取消、程序取消、向不存在目录写出失败后重试；不得假报成功或留下半文件。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-19",
+    "name": "修复入口与原文保留",
+    "behavior": "点击“恢复框架”前保留当时最新完整原文，包含未落盘内容；保留方式与交互待定。",
+    "priority": "P0",
+    "expected": "修复后仍能找回点击时的全文，包括尚未保存的修改。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/build-and-unit.log"
+    ],
+    "steps": "给损坏样例追加未保存标记后修复；原文快照必须与点击时全文逐字一致。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-20",
+    "name": "明确结构恢复",
+    "behavior": "将能明确识别的字段值与正文迁回对应结构，保留原文字内容。",
+    "priority": "P0",
+    "expected": "可识别样例恢复结构后，字段值与正文内容不变。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/build-and-unit.log"
+    ],
+    "steps": "核对缺标题空格、字段粗体标记的两处明确修复；字段值和正文不变。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-21",
+    "name": "歧义内容保护",
+    "behavior": "归属不明文本完整保留并提示待整理，不猜测、改写或静默删除。",
+    "priority": "P0",
+    "expected": "歧义样例内容全部可找回，未归位部分可辨认；不承诺严重损坏时全部自动归位。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/build-and-unit.log"
+    ],
+    "steps": "检查 A17、42%、无归属文字及待整理说明；不把含混正文分配到猜测的模块。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-22",
+    "name": "自主章节保护",
+    "behavior": "增删、改名、移动章节属于正常编辑，修复不自动补回用户删除的默认模块。",
+    "priority": "P0",
+    "expected": "自定义章节保留，主动删去的模块在修复后不被补回。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json",
+      "../evidence/build-and-unit.log"
+    ],
+    "steps": "修复自定义/改名/删模块样例；不得补回默认工作/项目/教育/技能模块。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-23",
+    "name": "保存与重新打开（复用宿主）",
+    "behavior": "使用 Obsidian 保存和打开笔记，重新打开后继续编辑并关联简历预览。",
+    "priority": "P0",
+    "expected": "重开后与宿主保存内容一致，后续编辑仍能更新对应预览。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "通过宿主 save 保存，打开其他笔记后重新打开；核对保存内容和预览。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-24",
+    "name": "移动与重命名适配",
+    "behavior": "笔记移动或重命名后维护源文件与预览关联。",
+    "priority": "P0",
+    "expected": "操作后预览对应正确文件，后续修改和导出不引用旧路径或其他笔记。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/host-results.json"
+    ],
+    "steps": "通过 FileManager 移动并改名；核对新路径、源关联与再次编辑。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  },
+  {
+    "id": "CV-25",
+    "name": "插件启停与清理",
+    "behavior": "启用后可恢复使用；停用时清理预览与监听，不修改源笔记内容。",
+    "priority": "P1",
+    "expected": "反复启停不重复更新、不残留失效视图，笔记内容保持完整。",
+    "implementation": "已实现（0.1.0 开发版）",
+    "test": "开发样例技术验证通过",
+    "evidence": [
+      "../evidence/lifecycle-results.json"
+    ],
+    "steps": "停用/启用三轮；停用后预览、离屏测量节点和 PDF 窗口均为零，启用后只一个有效预览。",
+    "actual": "对应自动/宿主/页面检查通过；用户填写体验未作为已验收。"
+  }
+]

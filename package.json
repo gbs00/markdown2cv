@@ -1,0 +1,32 @@
+{
+  "name": "markdown-to-cv",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Obsidian desktop resume preview and PDF export development build",
+  "scripts": {
+    "dev": "node scripts/build.mjs --watch",
+    "build": "npm run typecheck && node scripts/build.mjs",
+    "build:release": "npm run typecheck && node scripts/build.mjs --release",
+    "package:manual": "npm run build:release && python3 scripts/package.py",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test.mjs",
+    "deploy:dev": "node scripts/deploy.mjs",
+    "test:host": "node scripts/host-tests.mjs",
+    "check": "npm run typecheck && npm test && npm run build",
+    "test:pdf": "node scripts/pdf-tests.mjs",
+    "test:font": "node scripts/font-host-tests.mjs && node scripts/pdf-tests.mjs --font",
+    "test:photo": "node scripts/photo-host-tests.mjs",
+    "test:lifecycle": "node scripts/lifecycle-tests.mjs",
+    "test:preview-ui": "node scripts/preview-ui-host-tests.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.17",
+    "esbuild": "0.28.2",
+    "obsidian": "1.13.1",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "moment": "2.31.0"
+  }
+}

@@ -1,0 +1,33 @@
+.markdown-to-cv-view { padding: 0 !important; display: flex; flex-direction: column; overflow: hidden; }
+.mcv-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; padding: 16px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); }
+.mcv-toolbar-actions, .mcv-toolbar-output { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.mcv-toolbar-output { margin-left: auto; }
+.markdown-to-cv-view .mcv-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 13px; border: 1px solid var(--background-modifier-border-hover); border-radius: 8px; background: var(--interactive-normal); color: var(--text-normal); box-shadow: 0 1px 2px #00000012; font-size: 13px; font-weight: 500; line-height: 1; white-space: nowrap; cursor: pointer; }
+.markdown-to-cv-view .mcv-button:hover:not(:disabled) { background: var(--interactive-hover); border-color: var(--text-muted); }
+.markdown-to-cv-view .mcv-button:focus-visible, .markdown-to-cv-view .mcv-zoom-select:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 3px; }
+.markdown-to-cv-view .mcv-button:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.markdown-to-cv-view .mcv-button-primary { background: color-mix(in srgb, var(--interactive-accent) 90%, black); color: var(--text-on-accent); border-color: color-mix(in srgb, var(--interactive-accent) 90%, black); box-shadow: 0 2px 5px #00000024; font-weight: 600; padding: 0 16px; }
+.markdown-to-cv-view .mcv-button-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--interactive-accent) 80%, black); border-color: color-mix(in srgb, var(--interactive-accent) 80%, black); }
+.markdown-to-cv-view .mcv-button[hidden] { display: none; }
+.mcv-button-icon { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.mcv-button-icon svg { width: 16px; height: 16px; stroke-width: 1.8; }
+.mcv-source { padding: 10px 16px 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-muted); }
+.mcv-preview-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; padding: 8px 16px 12px; border-bottom: 1px solid var(--background-modifier-border); }
+.mcv-status { font-size: 12px; color: var(--text-muted); flex: 1 1 auto; }
+.mcv-status[data-state=error] { color: var(--text-error); }
+.mcv-zoom { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.markdown-to-cv-view .mcv-zoom .mcv-button { height: 30px; border-color: transparent; box-shadow: none; background: transparent; padding: 0 8px; font-size: 12px; }
+.markdown-to-cv-view .mcv-zoom .mcv-button:hover:not(:disabled) { background: var(--background-modifier-hover); }
+.markdown-to-cv-view .mcv-icon-button { width: 30px; }
+.mcv-icon-button > span:last-child { display: none; }
+.markdown-to-cv-view .mcv-zoom-select { height: 30px; min-width: 94px; max-width: 110px; padding: 0 20px 0 8px; border: 1px solid var(--background-modifier-border); border-radius: 6px; box-shadow: none; font-size: 12px; font-variant-numeric: tabular-nums; background-color: var(--background-primary); color: var(--text-normal); }
+.markdown-to-cv-view .mcv-fit-button { margin-left: 4px; }
+.markdown-to-cv-view .mcv-fit-button[aria-pressed=true] { color: var(--text-accent); background: var(--background-modifier-hover); }
+.mcv-issues { padding: 0 16px; max-height: 130px; overflow: auto; font-size: 12px; }
+.mcv-issues:empty { display: none; }
+.mcv-issues button { display: block; text-align: left; white-space: normal; height: auto; padding: 4px; margin-bottom: 4px; font-size: 12px; }
+.mcv-viewport { flex: 1; overflow: auto; overflow-anchor: none; background: #e6ebef; padding: 20px; min-height: 0; }
+.mcv-empty { padding: 32px 20px; text-align: center; color: #566478; font-size: 13px; }
+.mcv-export-status { padding: 8px 16px; font-size: 12px; color: var(--text-muted); }
+.mcv-export-status:empty { display: none; }
+.mcv-measure { position: fixed !important; left: -20000px !important; top: 0 !important; visibility: hidden !important; width: 210mm !important; pointer-events: none !important; }

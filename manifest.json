@@ -1,0 +1,9 @@
+{
+  "id": "markdown-to-cv",
+  "name": "Markdown to CV",
+  "version": "0.1.0",
+  "minAppVersion": "1.13.0",
+  "description": "Turn Markdown notes into paginated resume previews and local PDFs. Desktop development build.",
+  "author": "Markdown to CV",
+  "isDesktopOnly": true
+}

@@ -1,0 +1,133 @@
+return (async () => {
+  const fs = require('fs');
+  const root = '/Users/gbs00/Projects/markdown-to-cv';
+  if (app.vault.adapter.getBasePath() !== root + '/dev-vault') throw Error('Unexpected Vault');
+  const plugin = app.plugins.plugins['markdown-to-cv'];
+  if (!plugin || plugin.views().some(view => view.exporting)) throw Error('Plugin unavailable or exporting');
+  const module = { exports: {} };
+  new Function('module', 'exports', 'require', fs.readFileSync(root + '/tmp/preview-ui-api.cjs', 'utf8'))(module, module.exports, require);
+  const { exportHtml, PdfService } = module.exports;
+  const result = { status: 'running', checks: {}, layouts: [], method: 'Offscreen production ResumeView with fictional Markdown; independent PDF service; no editor writes or workspace navigation' };
+  const evidence = root + '/evidence/preview-ui-20261004/host-' + runId + '.json';
+  const save = () => fs.writeFileSync(evidence, JSON.stringify(result, null, 2));
+  const assert = (ok, message) => { if (!ok) throw Error(message); };
+  const tick = () => new Promise(resolve => setTimeout(resolve, 100));
+  const wait = async condition => { for (let i = 0; i < 100; i++) { if (condition()) return; await tick(); } throw Error('Preview timed out'); };
+  const active = app.workspace.activeLeaf;
+  const editors = app.workspace.getLeavesOfType('markdown').map(leaf => ({ leaf, editor: leaf.view.editor, text: leaf.view.editor?.getValue() }));
+  const leaves = []; app.workspace.iterateAllLeaves(leaf => leaves.push(leaf));
+  const service = new PdfService(), controller = new AbortController();
+  const facade = Object.create(plugin); facade.pdf = service;
+  let detached, wrapper;
+  const rect = el => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom }; };
+  const anchorDifference = (before, after) => Math.max(Math.abs(before.x - after.x), Math.abs(before.y - after.y));
+  const luminance = color => {
+    const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext('2d'); ctx.fillStyle = color; ctx.fillRect(0, 0, 1, 1);
+    const channels = Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3).map(value => { const x = value / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; });
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  };
+  const contrast = (foreground, background) => { const a = luminance(foreground), b = luminance(background); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+  const chooseZoom = value => { detached.zoomSelect.value = String(value); detached.zoomSelect.dispatchEvent(new Event('change', { bubbles: true })); };
+  save();
+  try {
+    const bound = plugin.views()[0]; assert(bound, 'Expected an existing preview');
+    const leaf = Object.create(bound.leaf);
+    Object.defineProperty(leaf, 'containerEl', { value: document.createElement('div') });
+    detached = new bound.constructor(leaf, facade);
+    assert(!detached.containerEl.isConnected, 'Test view attached to workspace');
+    wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-20000px;top:0;width:666px;height:850px;pointer-events:none;';
+    wrapper.append(detached.containerEl); document.body.append(wrapper);
+    detached.containerEl.style.cssText = 'width:100%;height:100%;';
+    detached.contentEl.style.height = '100%';
+    detached.load(); await detached.onOpen();
+    assert(detached.zoomSelect.disabled && detached.zoomIn.disabled && detached.zoomOut.disabled && detached.repairButton.disabled, 'Empty preview has enabled content actions');
+    result.checks.emptyPreviewControlsDisabled = true;
+    const file = app.vault.getFileByPath('fixtures/04-pagination.md'); assert(file, 'Missing fictional fixture');
+    const snapshot = { path: file.path, name: '虚构缩放验收', text: fs.readFileSync(root + '/fixtures/04-pagination.md', 'utf8'), capturedAt: Number(runId) };
+    detached.bindFile(file); detached.schedule(snapshot);
+    await wait(() => detached.current?.snapshot === snapshot && detached.status.dataset.state === 'ready');
+    const originalPages = detached.current.pageCount;
+    const initialHtml = await exportHtml(detached.current, controller.signal);
+    assert(detached.viewport.scrollWidth <= detached.viewport.clientWidth + 1, 'Fit width has horizontal overflow');
+    const toolbar = detached.contentEl.querySelector('.mcv-toolbar');
+    assert(JSON.stringify(Array.from(toolbar.querySelectorAll('button')).filter(b => !b.hidden).map(b => b.textContent)) === JSON.stringify(['新建简历', '回到模板', '导出 PDF']), 'Wrong main actions');
+    assert(toolbar.querySelectorAll('button:not([hidden]) svg').length === 3, 'Action icons missing');
+    assert(getComputedStyle(detached.exportButton).backgroundColor !== getComputedStyle(detached.repairButton).backgroundColor, 'Export action lacks visual hierarchy');
+    assert(rect(detached.exportButton).height >= 36, 'Primary target too small');
+    assert(detached.zoomSelect.getAttribute('aria-label') && detached.zoomIn.getAttribute('aria-label') && detached.zoomOut.getAttribute('aria-label'), 'Zoom controls lack accessible names');
+    result.checks.actionHierarchyAndAccessibleZoom = true;
+
+    detached.viewport.scrollTop = 600;
+    const beforeZoom = detached.previewAnchor();
+    detached.zoomIn.click();
+    assert(detached.displayScale === 1, 'Plus should reach 100% from fit');
+    chooseZoom(1.5);
+    assert(Math.abs(detached.current.host.getBoundingClientRect().width - 210 * 96 / 25.4 * 1.5) < 1, '150% does not scale the paper');
+    assert(anchorDifference(beforeZoom, detached.previewAnchor()) < 2, 'Zoom lost the viewed region');
+    result.checks.zoomKeepsViewedRegion = true;
+    detached.viewport.scrollLeft = detached.viewport.scrollWidth;
+    const right = detached.viewport.scrollLeft;
+    detached.viewport.scrollLeft = 0;
+    assert(right > 0 && detached.viewport.scrollLeft === 0, 'Zoomed page cannot pan to both edges');
+    result.checks.horizontalPan = true;
+    assert(await exportHtml(detached.current, controller.signal) === initialHtml, 'Zoom modified export HTML');
+    assert(detached.current.pageCount === originalPages, 'Zoom changed pagination');
+    result.checks.zoomDoesNotChangePdfMarkupOrPagination = true;
+
+    detached.viewport.scrollLeft = 140;
+    const beforeEdit = detached.previewAnchor();
+    const updated = { ...snapshot, text: snapshot.text + '\n\n预览更新验收：保持当前放大比例与浏览位置。\n', capturedAt: snapshot.capturedAt + 1 };
+    detached.schedule(updated);
+    await wait(() => detached.current?.snapshot === updated && detached.status.dataset.state === 'ready');
+    assert(detached.displayScale === 1.5 && detached.zoomSelect.value === '1.5', 'Editing reset the zoom');
+    assert(anchorDifference(beforeEdit, detached.previewAnchor()) < 2, 'Editing reset the viewed region');
+    result.checks.editKeepsZoomAndViewedRegion = true;
+    const state = detached.getState();
+    assert(state.previewZoom === 1.5, 'View state omitted zoom');
+    chooseZoom(1);
+    await detached.setState(state, {}); detached.schedule(updated);
+    await wait(() => detached.current?.snapshot === updated && detached.status.dataset.state === 'ready');
+    assert(detached.displayScale === 1.5, 'Restored view state lost zoom');
+    result.checks.zoomStateRestoration = true;
+
+    chooseZoom(0.5); assert(detached.zoomOut.disabled, 'Minimum zoom still decreases');
+    chooseZoom(2); assert(detached.zoomIn.disabled, 'Maximum zoom still increases');
+    for (const width of [320, 400, 666, 950]) {
+      wrapper.style.width = width + 'px'; await tick();
+      assert(detached.displayScale === 2, 'Panel resize changed manual zoom');
+      detached.fitButton.click(); await tick();
+      const content = rect(detached.contentEl);
+      const controls = Array.from(detached.contentEl.querySelectorAll('.mcv-toolbar button, .mcv-zoom button, .mcv-zoom select')).filter(el => !el.hidden);
+      assert(controls.every(el => { const r = rect(el); return r.x >= content.x - 1 && r.right <= content.right + 1; }), 'Controls clipped at width ' + width);
+      assert(detached.viewport.scrollWidth <= detached.viewport.clientWidth + 1, 'Fit page overflows at width ' + width);
+      result.layouts.push({ width, fitScale: detached.displayScale, paperWidth: rect(detached.current.host).width, viewportWidth: detached.viewport.clientWidth });
+      chooseZoom(2);
+    }
+    result.checks.zoomLimitsAndResponsiveLayout = true;
+    const primary = getComputedStyle(detached.exportButton), secondary = getComputedStyle(detached.repairButton);
+    result.palette = { scope: 'Current Obsidian host theme only; not a third-party theme compatibility test', primaryBackground: primary.backgroundColor, primaryText: primary.color, secondaryBackground: secondary.backgroundColor, secondaryText: secondary.color, primaryContrast: contrast(primary.color, primary.backgroundColor), secondaryContrast: contrast(secondary.color, secondary.backgroundColor) };
+    assert(result.palette.primaryContrast >= 4.5 && result.palette.secondaryContrast >= 4.5, 'Button text contrast is insufficient');
+    result.checks.hostButtonContrast = true;
+    wrapper.style.width = '666px'; await tick(); chooseZoom(1.5);
+    const output = root + '/output/pdf/preview-zoom-' + runId + '.pdf';
+    await detached.exportPdf(output, snapshot);
+    assert(detached.lastExport?.status === 'success', 'PDF export failed: ' + detached.lastExport?.message);
+    const printed = await service.window.webContents.executeJavaScript('JSON.stringify({pages:Array.from(document.querySelectorAll(".cv-page")).map(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height})),text:document.body.innerText})');
+    const pdf = JSON.parse(printed);
+    assert(pdf.pages.length === originalPages && pdf.pages.every(p => Math.abs(p.width - 210 * 96 / 25.4) < 1 && Math.abs(p.height - 297 * 96 / 25.4) < 1), 'Zoom changed PDF paper size or page count');
+    assert(!pdf.text.includes('预览更新验收') && detached.displayScale === 1.5, 'Export changed preview scale or snapshot');
+    result.pdf = { path: output, pages: pdf.pages.length, paper: pdf.pages, bytes: fs.statSync(output).size };
+    result.checks.exportAt150PercentKeepsA4 = true;
+    result.status = 'complete';
+  } catch (error) { result.status = 'failed'; result.error = String(error.stack ?? error); }
+  finally {
+    if (detached) { await detached.onClose(); detached.unload(); detached.containerEl.remove(); }
+    wrapper?.remove(); service.dispose();
+    const after = []; app.workspace.iterateAllLeaves(leaf => after.push(leaf));
+    result.safety = { nativeEditorsPreserved: editors.every(v => v.leaf.view.editor === v.editor), nativeBuffersUnchanged: editors.every(v => v.editor?.getValue() === v.text), activeLeafUnchanged: app.workspace.activeLeaf === active, workspaceLeavesUnchanged: after.length === leaves.length && leaves.every(leaf => after.includes(leaf)), noNoteWrites: true };
+    save();
+  }
+  return JSON.stringify({ status: result.status, error: result.error });
+})();

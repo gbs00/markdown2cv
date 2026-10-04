@@ -1,0 +1,43 @@
+:host { all: initial; display: block; color-scheme: light; }
+.cv-root, .cv-root * { box-sizing: border-box; }
+.cv-root { font: 400 12px/1.65 "MCV Source Han Sans CN"; font-synthesis: style; color: #192332; text-align: left; letter-spacing: 0; word-break: normal; overflow-wrap: anywhere; }
+.cv-root h1,.cv-root h2,.cv-root h3,.cv-root h4,.cv-root h5,.cv-root h6,.cv-root p,.cv-root ul,.cv-root ol,.cv-root blockquote,.cv-root pre,.cv-root table { padding: 0; border: 0; margin: 0; font-family: inherit; color: inherit; }
+.cv-page { width: 210mm; height: 297mm; padding: 16mm; position: relative; background: white; box-shadow: 0 2px 12px #14243b24; margin: 0 auto 20px; }
+.cv-page-content { height: 265mm; width: 178mm; display: flow-root; }
+.cv-page-number { position: absolute; bottom: 7mm; left: 16mm; right: 16mm; text-align: right; color: #75808f; font-size: 10px; line-height: 1; }
+.cv-unit { display: flow-root; margin: 0; padding: 0; }
+.cv-root h1 { font-size: 28px; line-height: 1.25; font-weight: 700; margin: 0 0 12px; letter-spacing: .5px; }
+.cv-root h2 { font-size: 15px; line-height: 1.45; font-weight: 500; color: #193d52; border-bottom: 1px solid #acbcc6; margin: 18px 0 8px; padding-bottom: 4px; }
+.cv-root h3 { font-size: 13px; line-height: 1.5; font-weight: 500; margin: 10px 0 5px; }
+.cv-root h4,.cv-root h5,.cv-root h6 { font-size: 12px; line-height: 1.5; font-weight: 500; margin: 7px 0 3px; }
+.cv-page-content > .cv-unit:first-child > :first-child { margin-top: 0; }
+.cv-root p { margin: 0 0 5px; }
+.cv-root .cv-field { margin: 0 0 3px; }
+.cv-root strong { font-weight: 700; }
+.cv-root a { color: #175b79; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.cv-root ul,.cv-root ol { margin: 0 0 4px; padding-left: 19px; list-style-position: outside; }
+.cv-root ul { list-style-type: disc; }
+.cv-root ol { list-style-type: decimal; }
+.cv-root li { margin: 0; padding-left: 1px; }
+.cv-root li p { margin-bottom: 3px; }
+.cv-root .cv-continuation li { list-style-type: none; }
+.cv-root blockquote { border-left: 2px solid #bccad4; padding-left: 12px; margin: 5px 0 8px; color: #455467; }
+.cv-root code { font: 400 11px/1.6 "MCV Source Han Sans CN"; white-space: pre-wrap; overflow-wrap: anywhere; background: #f0f3f5; }
+.cv-root pre { background: #f0f3f5; padding: 8px; margin: 5px 0 8px; white-space: pre-wrap; }
+.cv-root table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 11px; }
+.cv-root th,.cv-root td { border: 1px solid #bccad4; padding: 5px 7px; text-align: left; }
+.cv-root img { display: block; max-width: 100%; max-height: 240mm; object-fit: contain; }
+.cv-profile { display: grid; grid-template-columns: minmax(0, 1fr) 28mm; gap: 6mm; align-items: start; }
+.cv-profile-details { min-width: 0; }
+.cv-profile-photo { display: flex; justify-content: flex-end; align-items: flex-start; }
+.cv-profile-photo img { width: auto; height: auto; max-width: 28mm; max-height: 36mm; object-fit: contain; }
+.cv-root hr { border: 0; border-top: 1px solid #bccad4; margin: 10px 0; }
+.cv-root .heading-collapse-indicator,.cv-root .collapse-indicator,.cv-root .copy-code-button,.cv-root .metadata-container { display: none; }
+.cv-root .internal-link { color: #354454; }
+@page { size: A4; margin: 0; }
+@media print {
+  html,body { margin: 0; padding: 0; background: white; }
+  .cv-page { box-shadow: none; margin: 0; break-after: page; break-inside: avoid; }
+  .cv-page:last-child { break-after: auto; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

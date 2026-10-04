@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dev-vault/
+.test-build/
+tmp/
+.DS_Store
+evidence/
+output/
+release/
+.env
+.env.*
+!.env.example
