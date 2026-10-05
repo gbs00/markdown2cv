@@ -1,6 +1,6 @@
 {
   "name": "markdown-to-cv",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "Create resumes from Markdown with live A4 previews and local PDF export.",
@@ -11,16 +11,16 @@
     "url": "https://github.com/gbs00/markdown2cv.git"
   },
   "scripts": {
-    "dev": "node scripts/build.mjs --watch",
+    "dev": "node scripts/build.mjs --dev --watch",
     "build": "npm run typecheck && node scripts/build.mjs",
-    "build:release": "npm run typecheck && node scripts/build.mjs --release",
+    "build:release": "npm run build",
     "package": "npm run build:release && python3 scripts/package.py",
     "package:manual": "npm run package",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test.mjs",
     "deploy:dev": "node scripts/deploy.mjs",
     "test:host": "node scripts/host-tests.mjs",
-    "check": "npm run typecheck && npm test && npm run build",
+    "check": "npm run lint && npm test && npm run build",
     "lint": "eslint src --max-warnings=0",
     "check:release": "npm run lint && npm test && npm run package",
     "prepare:release-test": "node scripts/prepare-release-vault.mjs",
@@ -29,7 +29,8 @@
     "test:font": "node scripts/font-host-tests.mjs && node scripts/pdf-tests.mjs --font",
     "test:photo": "node scripts/photo-host-tests.mjs",
     "test:lifecycle": "node scripts/lifecycle-tests.mjs",
-    "test:preview-ui": "node scripts/preview-ui-host-tests.mjs"
+    "test:preview-ui": "node scripts/preview-ui-host-tests.mjs",
+    "test:architecture": "node scripts/architecture-host-tests.mjs"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

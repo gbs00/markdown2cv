@@ -6,7 +6,7 @@ import { PdfService } from './pdf';
 import { repairMarkdown } from './model';
 import type { Snapshot } from './model';
 import { ResumeFonts } from './fonts';
-import { readBundledFont } from './bundled-font';
+import { readBundledFont, readBundledFontCss } from './bundled-font';
 import { renderResume } from './render';
 import type { RenderedResume } from './render';
 
@@ -18,7 +18,7 @@ export default class MarkdownToCvPlugin extends Plugin {
   private repairBusy = false;
   private ribbonMenu: Menu | null = null;
   async onload(): Promise<void> {
-    this.fonts = new ResumeFonts(readBundledFont);
+    this.fonts = new ResumeFonts(readBundledFont, readBundledFontCss);
     this.register(() => this.fonts.dispose());
     this.registerView(VIEW_TYPE, leaf => new ResumeView(leaf, this));
     const ribbon = this.addRibbonIcon('file-user', '新建简历（右键更多操作）', () => this.run(() => this.createResume()));
@@ -47,7 +47,10 @@ export default class MarkdownToCvPlugin extends Plugin {
     this.registerEvent(this.app.workspace.on('editor-change', (editor, info) => {
       this.edits.set(editor, ++this.editSequence);
       const file = info.file; if (!file) return;
-      for (const view of this.views()) if (view.source === file) view.schedule(this.editorSnapshot(file, editor));
+      // Capture after the debounce window, once for the latest editor state.
+      for (const view of this.views()) if (view.source === file) {
+        view.schedule(() => info.file === file ? this.editorSnapshot(file, editor) : this.capture(file));
+      }
     }));
     this.registerEvent(this.app.workspace.on('file-open', file => {
       if (file?.extension === 'md') this.views().forEach(view => view.bindFile(file));
@@ -55,13 +58,18 @@ export default class MarkdownToCvPlugin extends Plugin {
     this.registerEvent(this.app.workspace.on('active-leaf-change', leaf => {
       if (leaf?.view instanceof MarkdownView && leaf.view.file?.extension === 'md') this.views().forEach(view => view.bindFile((leaf.view as MarkdownView).file!));
     }));
-    this.registerEvent(this.app.vault.on('modify', file => { this.views().forEach(view => { if (view.source === file || view.current?.photoPath === file.path) view.schedule(); }); }));
+    this.registerEvent(this.app.vault.on('create', file => { this.views().forEach(view => view.resourceChanged(file.path)); }));
+    this.registerEvent(this.app.vault.on('modify', file => { this.views().forEach(view => {
+      if (view.source === file) view.schedule(); else view.resourceChanged(file.path);
+    }); }));
     this.registerEvent(this.app.vault.on('rename', (file, oldPath) => { if (file instanceof TFile) this.views().forEach(view => {
-      if (view.source === file) view.bindFile(file); else if (view.current?.photoPath === oldPath) view.schedule();
+      if (view.source === file) view.bindFile(file); else view.resourceChanged(file.path, oldPath);
     }); }));
     this.registerEvent(this.app.vault.on('delete', file => { this.views().forEach(view => {
-      if (view.source === file) view.sourceDeleted(); else if (view.current?.photoPath === file.path) view.schedule();
+      if (view.source === file) view.sourceDeleted(); else view.resourceChanged(file.path);
     }); }));
+    // A newly created attachment may not resolve until metadata indexing finishes.
+    this.registerEvent(this.app.metadataCache.on('resolved', () => { this.views().forEach(view => view.resourceChanged()); }));
   }
   onunload(): void {
     this.ribbonMenu?.hide();

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { prepareMarkdown, repairMarkdown, RevisionGate, abortable } from '../src/model';
+import { abortable } from '../src/async';
+import { prepareMarkdown, repairMarkdown, RevisionGate } from '../src/model';
 const fixture = (name: string) => readFileSync(`fixtures/${name}.md`, 'utf8');
 
 test('CV-06: blank contact/custom values disappear, populated block labels and source lines survive', () => {

@@ -1,7 +1,8 @@
 import { Component, MarkdownRenderer } from 'obsidian';
 import type { App } from 'obsidian';
 import paperCss from './paper.css';
-import { abortable, abortIfNeeded, isPhotoEmbed, prepareMarkdown } from './model';
+import { abortable, abortIfNeeded } from './async';
+import { isPhotoEmbed, prepareMarkdown } from './model';
 import type { Issue, PhotoField, Snapshot } from './model';
 import type { ResumeFonts } from './fonts';
 
@@ -15,7 +16,20 @@ export interface RenderedResume {
   snapshot: Snapshot;
   fonts: ResumeFonts;
   photoPath?: string;
+  resourcePaths: ReadonlySet<string>;
+  hasUnresolvedResources: boolean;
   dispose(): void;
+}
+
+interface RenderResources { paths: Set<string>; unresolved: boolean }
+
+function collectResources(app: App, root: HTMLElement, sourcePath: string, resources: RenderResources): void {
+  for (const embed of Array.from(root.querySelectorAll('.internal-embed[src]'))) {
+    const linkpath = embed.getAttribute('src')?.split('#')[0];
+    if (!linkpath) continue;
+    const file = app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
+    if (file) resources.paths.add(file.path); else resources.unresolved = true;
+  }
 }
 
 function semanticBlocks(container: HTMLElement): HTMLElement[] {
@@ -63,8 +77,8 @@ function flowUnits(blocks: HTMLElement[], doc: Document): HTMLElement[] {
 
 function textLength(node: Node): number { return node.textContent?.length ?? 0; }
 
-/** Range cloning retains links/emphasis and never changes reading order. */
-function splitAt(element: HTMLElement, offset: number): [HTMLElement, HTMLElement] {
+/** Only clone the trailing slice when committing a split, not on every size probe. */
+function splitAt(element: HTMLElement, offset: number): { first: HTMLElement; rest: () => HTMLElement } {
   const doc = element.ownerDocument;
   const walker = doc.createTreeWalker(element, NodeFilter.SHOW_TEXT);
   let node = walker.nextNode();
@@ -73,10 +87,21 @@ function splitAt(element: HTMLElement, offset: number): [HTMLElement, HTMLElemen
   if (!node) throw new Error('无法安全拆分过长内容，请调整该段落后重试。');
   const left = doc.createRange(); left.selectNodeContents(element); left.setEnd(node, offset - consumed);
   const right = doc.createRange(); right.selectNodeContents(element); right.setStart(node, offset - consumed);
-  const a = element.cloneNode(false) as HTMLElement, b = element.cloneNode(false) as HTMLElement;
-  a.append(left.cloneContents()); b.append(right.cloneContents());
-  b.classList.add('cv-continuation');
-  return [a, b];
+  const first = element.cloneNode(false) as HTMLElement;
+  first.append(left.cloneContents());
+  return { first, rest: () => {
+    const rest = element.cloneNode(false) as HTMLElement;
+    rest.append(right.cloneContents()); rest.classList.add('cv-continuation');
+    return rest;
+  } };
+}
+
+function copyWithLast(unit: HTMLElement, last: HTMLElement): HTMLElement {
+  const copy = unit.cloneNode(false) as HTMLElement;
+  // The oversized final block is already sliced; do not clone and discard it.
+  for (const child of Array.from(unit.children).slice(0, -1)) copy.append(child.cloneNode(true));
+  copy.append(last);
+  return copy;
 }
 
 function paginate(source: HTMLElement, pages: HTMLElement): void {
@@ -115,9 +140,8 @@ function paginate(source: HTMLElement, pages: HTMLElement): void {
       let low = 1, high = boundaries.length - 2, best = 0;
       while (low <= high) {
         const mid = Math.floor((low + high) / 2);
-        const [first] = splitAt(last, boundaries[mid]!);
-        const candidate = unit.cloneNode(true) as HTMLElement;
-        candidate.lastElementChild!.replaceWith(first); content!.append(candidate);
+        const { first } = splitAt(last, boundaries[mid]!);
+        const candidate = copyWithLast(unit, first); content!.append(candidate);
         const ok = fits(); candidate.remove();
         if (ok) { best = mid; low = mid + 1; } else high = mid - 1;
       }
@@ -126,10 +150,10 @@ function paginate(source: HTMLElement, pages: HTMLElement): void {
       let offset = boundaries[best]!;
       const nearby = text.slice(Math.max(0, offset - 36), offset).match(/[\s，。；、.!?;][^\s，。；、.!?;]*$/);
       if (nearby && nearby.index !== undefined) offset = Math.max(0, offset - 36) + nearby.index + 1;
-      const [first, rest] = splitAt(last, offset);
-      const head = unit.cloneNode(true) as HTMLElement; head.lastElementChild!.replaceWith(first);
+      const { first, rest } = splitAt(last, offset);
+      const head = copyWithLast(unit, first);
       content!.append(head);
-      unit = doc.createElement('div'); unit.className = 'cv-unit'; unit.append(rest);
+      unit = doc.createElement('div'); unit.className = 'cv-unit'; unit.append(rest());
       newPage();
     }
   }
@@ -140,6 +164,11 @@ function paginate(source: HTMLElement, pages: HTMLElement): void {
 }
 
 async function imageReady(img: HTMLImageElement, signal: AbortSignal): Promise<void> {
+  abortIfNeeded(signal);
+  if (img.complete) {
+    if (!img.naturalWidth) throw new Error('图片未能加载，请检查附件路径。');
+    return;
+  }
   let cleanup = () => {};
   try {
     await abortable(new Promise<void>((resolve, reject) => {
@@ -153,11 +182,21 @@ async function imageReady(img: HTMLImageElement, signal: AbortSignal): Promise<v
 }
 
 async function resourcesReady(element: HTMLElement, signal: AbortSignal): Promise<void> {
-  await abortable(element.ownerDocument.fonts.ready, signal);
-  await Promise.all(Array.from(element.querySelectorAll('img')).map(img => imageReady(img, signal)));
+  // ResumeFonts.prepare already verifies our font. Waiting for the entire
+  // document also waits for unrelated themes/plugins and can delay every edit.
+  abortIfNeeded(signal);
+  const pending = new AbortController();
+  const cancel = () => pending.abort();
+  signal.addEventListener('abort', cancel, { once: true });
+  try {
+    await Promise.all(Array.from(element.querySelectorAll('img')).map(img => imageReady(img, pending.signal)));
+  } finally {
+    // One failed image must release the other image listeners and timeout tasks.
+    pending.abort(); signal.removeEventListener('abort', cancel);
+  }
 }
 
-async function profilePhoto(app: App, field: PhotoField, source: HTMLElement, sourcePath: string, owner: Component, signal: AbortSignal, issues: Issue[]): Promise<string | undefined> {
+async function profilePhoto(app: App, field: PhotoField, source: HTMLElement, sourcePath: string, owner: Component, signal: AbortSignal, issues: Issue[], resources: RenderResources): Promise<string | undefined> {
   const doc = source.ownerDocument;
   const staging = doc.createElement('div'); source.after(staging);
   let photoPath: string | undefined;
@@ -167,12 +206,14 @@ async function profilePhoto(app: App, field: PhotoField, source: HTMLElement, so
     if (!isPhotoEmbed(field.markdown)) throw new Error('请填入本地图片引用，例如 ![[附件/头像.jpg]]。');
     if (/[a-z][a-z0-9+.-]*:|(?:\]\(|<)\s*\/\//i.test(field.markdown)) throw new Error('请先将照片保存到 Vault，再引用本地附件。');
     await abortable(MarkdownRenderer.render(app, field.markdown, staging, sourcePath, owner), signal);
+    collectResources(app, staging, sourcePath, resources);
     const images = Array.from(staging.querySelectorAll('img'));
     if (images.length !== 1 || staging.textContent?.trim()) throw new Error('请引用一张有效的本地图片，并将说明文字放到其他段落。');
     const img = images[0]!;
     const linkpath = img.closest('.internal-embed')?.getAttribute('src');
     const file = linkpath ? app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath) : null;
     photoPath = file?.path;
+    if (!file) resources.unresolved = true;
     if (!file || !img.getAttribute('src')?.startsWith('app://')) throw new Error('找不到照片附件，请检查图片路径。');
     if (!/^(png|jpe?g|webp)$/i.test(file.extension)) throw new Error('照片支持 PNG、JPEG 和 WebP，请转换后再引用。');
     await imageReady(img, signal);
@@ -205,41 +246,71 @@ export async function renderResume(app: App, snapshot: Snapshot, owner: Componen
   const pages = doc.createElement('div'); pages.className = 'cv-root cv-pages'; shadow.append(pages);
   doc.body.append(host);
   const prepared = prepareMarkdown(snapshot.text);
+  const resources: RenderResources = { paths: new Set(), unresolved: false };
   const dispose = () => { owner.removeChild(component); host.remove(); };
   try {
     await fonts.prepare(doc, signal);
     await abortable(MarkdownRenderer.render(app, prepared.markdown, source, snapshot.path, component), signal);
     abortIfNeeded(signal);
     source.querySelectorAll('p').forEach(p => { if (p.firstElementChild?.tagName === 'STRONG' && /[：:]$/.test(p.firstElementChild.textContent ?? '')) p.classList.add('cv-field'); });
-    const photoPath = prepared.photo ? await profilePhoto(app, prepared.photo, source, snapshot.path, component, signal, prepared.issues) : undefined;
+    collectResources(app, source, snapshot.path, resources);
+    const photoPath = prepared.photo ? await profilePhoto(app, prepared.photo, source, snapshot.path, component, signal, prepared.issues, resources) : undefined;
     await resourcesReady(source, signal);
     // Capture static Markdown output. Arbitrary dynamic postprocessors are outside this build's contract.
     paginate(source, pages);
     source.remove();
-    return { host, shadow, pages, pageCount: pages.children.length, snapshot, fonts, photoPath, issues: prepared.issues, hiddenFields: prepared.hiddenFields, dispose };
+    return { host, shadow, pages, pageCount: pages.children.length, snapshot, fonts, photoPath, resourcePaths: resources.paths, hasUnresolvedResources: resources.unresolved, issues: prepared.issues, hiddenFields: prepared.hiddenFields, dispose };
   } catch (error) { dispose(); throw error; }
 }
 
+async function localImageDataUrl(img: HTMLImageElement, src: string, signal: AbortSignal): Promise<string> {
+  // Only local app:// attachments; requestUrl cannot read this Vault protocol.
+  abortIfNeeded(signal);
+  const pending = new AbortController();
+  const cancel = () => pending.abort();
+  signal.addEventListener('abort', cancel, { once: true });
+  let blob: Blob;
+  try {
+    blob = await abortable(img.ownerDocument.win.fetch(src, { signal: pending.signal }).then(r => { if (!r.ok) throw new Error('本地图片读取失败'); return r.blob(); }), signal);
+  } finally {
+    pending.abort(); signal.removeEventListener('abort', cancel);
+  }
+  const Reader = img.ownerDocument.defaultView?.FileReader ?? FileReader;
+  const reader = new Reader();
+  try {
+    return await abortable(new Promise<string>((resolve, reject) => {
+      reader.onload = () => { if (typeof reader.result === 'string') resolve(reader.result); else reject(new Error('本地图片转换失败')); };
+      reader.onerror = () => reject(new Error('本地图片转换失败'));
+      reader.readAsDataURL(blob);
+    }), signal);
+  } finally {
+    reader.onload = null; reader.onerror = null;
+    if (reader.readyState === 1) reader.abort();
+  }
+}
+
 export async function exportHtml(rendered: RenderedResume, signal: AbortSignal): Promise<string> {
+  abortIfNeeded(signal);
   const blocking = rendered.issues.find(issue => issue.blocksExport);
   if (blocking) throw new Error(`第 ${blocking.line + 1} 行：${blocking.message}`);
   const copy = rendered.pages.cloneNode(true) as HTMLElement;
   if (copy.querySelector('iframe,object,embed,video,audio,canvas')) throw new Error('包含开发版 PDF 不支持的动态内容，请改为静态 Markdown 后重试。');
   for (const el of Array.from(copy.querySelectorAll('*'))) {
     if (el.matches('script,style,iframe,object,embed,button,input,video,audio,canvas')) {
-      if (el.textContent?.trim()) el.replaceWith(document.createTextNode(el.textContent)); else el.remove();
+      if (el.textContent?.trim()) el.replaceWith(copy.ownerDocument.createTextNode(el.textContent)); else el.remove();
       continue;
     }
     for (const attr of Array.from(el.attributes)) if (/^on/i.test(attr.name) || attr.name === 'style') el.removeAttribute(attr.name);
     if (el.instanceOf(HTMLAnchorElement) && !/^(https?:|mailto:|tel:)/i.test(el.getAttribute('href') ?? '')) el.removeAttribute('href');
   }
+  const images = new Map<string, string>();
   for (const img of Array.from(copy.querySelectorAll('img'))) {
     const src = img.getAttribute('src') ?? '';
     if (src.startsWith('data:')) continue;
     if (!src.startsWith('app://')) throw new Error('开发版 PDF 仅支持已加载的本地附件图片；请将远程图片保存到 Vault 后重试。');
-    // Only local app:// attachments; requestUrl cannot read this Vault protocol.
-    const blob = await abortable(img.ownerDocument.win.fetch(src, { signal }).then(r => { if (!r.ok) throw new Error('本地图片读取失败'); return r.blob(); }), signal);
-    img.src = await abortable(new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => { if (typeof reader.result === 'string') resolve(reader.result); else reject(new Error('本地图片转换失败')); }; reader.onerror = () => reject(new Error('本地图片转换失败')); reader.readAsDataURL(blob); }), signal);
+    let data = images.get(src);
+    if (!data) { data = await localImageDataUrl(img, src, signal); images.set(src, data); }
+    img.src = data;
   }
   const fontCss = await rendered.fonts.css(signal);
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:"><title>Markdown to CV</title><style>${fontCss}\n${paperCss}</style></head><body>${copy.outerHTML}</body></html>`;

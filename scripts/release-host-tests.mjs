@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 const root = fileURLToPath(new URL('..', import.meta.url));
-const config = JSON.parse(await readFile(path.join(root, 'tmp/release-qa.json'), 'utf8'));
+const config = JSON.parse(await readFile(path.resolve(root, process.argv[2] ?? 'tmp/release-qa.json'), 'utf8'));
 if (path.dirname(config.vault) !== path.join(root, 'tmp') || !config.name.startsWith('mcv-release-qa-')) throw Error('Unexpected test vault');
 if (await readFile(path.join(config.vault, '.mcv-release-qa'), 'utf8') !== config.version) throw Error('Release test marker mismatch');
 // This generated Vault contains only fixtures. Reload before each run so the

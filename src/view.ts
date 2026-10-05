@@ -1,7 +1,8 @@
 import { ItemView, TFile, setIcon } from 'obsidian';
 import type { WorkspaceLeaf, ViewStateResult } from 'obsidian';
 import type MarkdownToCvPlugin from './main';
-import { RevisionGate, abortIfNeeded } from './model';
+import { abortIfNeeded } from './async';
+import { RevisionGate } from './model';
 import type { Snapshot } from './model';
 import { exportHtml } from './render';
 import type { RenderedResume } from './render';
@@ -11,15 +12,19 @@ export const VIEW_TYPE = 'markdown-to-cv-preview';
 const PAGE_WIDTH = 210 * 96 / 25.4;
 const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 type PreviewAnchor = { x: number; y: number };
+type PreviewTimer = { win: Window; id: number };
 export class ResumeView extends ItemView {
   source: TFile | null = null;
   current: RenderedResume | null = null;
-  readonly metrics = { renders: [] as number[], exports: [] as number[], commits: 0 };
+  readonly metrics = { renders: [] as number[], exports: [] as number[], commits: 0, skipped: 0 };
   lastExport: { status: string; source: string; path?: string; milliseconds: number; message?: string } | null = null;
   private gate = new RevisionGate();
-  private timer: number | null = null;
+  private timer: PreviewTimer | null = null;
   private rendering: AbortController | null = null;
   private exporting: AbortController | null = null;
+  private resourceRevision = 0;
+  private renderedResourceRevision = -1;
+  private renderedDocument: Document | null = null;
   private viewport!: HTMLElement;
   private status!: HTMLElement;
   private sourceLabel!: HTMLElement;
@@ -80,6 +85,8 @@ export class ResumeView extends ItemView {
     this.viewport = this.contentEl.createDiv('mcv-viewport');
     const observer = new ResizeObserver(() => this.fit()); observer.observe(this.viewport);
     this.register(() => observer.disconnect());
+    // FontFace registrations belong to a Document, not the adopted preview DOM.
+    this.register(this.contentEl.onWindowMigrated(() => this.schedule(undefined, true)));
     this.ready = true;
     this.updateZoomControls(); this.repairButton.disabled = !this.source;
     if (this.source) this.bindFile(this.source);
@@ -98,25 +105,43 @@ export class ResumeView extends ItemView {
   }
   sourceDeleted(): void {
     this.source = null; this.gate.invalidate(); this.rendering?.abort();
-    if (this.timer) this.contentEl.win.clearTimeout(this.timer);
+    this.clearTimer();
     this.current?.dispose(); this.current = null;
     this.viewport.empty(); this.issues.empty(); this.sourceLabel.textContent = '源笔记已删除'; this.status.textContent = '请选择另一篇 Markdown 笔记。'; this.exportButton.disabled = true;
     this.sourceLabel.removeAttribute('title'); this.repairButton.disabled = true; this.updateZoomControls();
   }
-  schedule(snapshot?: Snapshot): void {
+  resourceChanged(...paths: string[]): void {
+    // A pending/failed render may reference resources absent from the last good
+    // preview, so its dependency set alone cannot safely filter these events.
+    if (!this.current || this.timer !== null || this.rendering || this.status.dataset.state === 'error'
+      || this.current.hasUnresolvedResources || paths.some(path => this.current!.resourcePaths.has(path))) {
+      this.schedule(undefined, true);
+    }
+  }
+  private clearTimer(): void {
+    const timer = this.timer; this.timer = null;
+    // A leaf may already belong to another window when cancelling its old timer.
+    if (timer) timer.win.clearTimeout(timer.id);
+  }
+  schedule(snapshot?: Snapshot | (() => Snapshot | Promise<Snapshot>), resourcesChanged = false): void {
     if (!this.source || !this.ready || this.closed) return;
+    if (resourcesChanged) this.resourceRevision++;
     const ticket = this.gate.request(this.source.path);
     const file = this.source;
     const started = performance.now();
     this.rendering?.abort();
-    if (this.timer) this.contentEl.win.clearTimeout(this.timer);
+    this.clearTimer();
     const metadata = this.current ? `A4 · ${this.current.pageCount} 页` : '';
     if (this.status.textContent !== metadata) this.status.textContent = metadata;
     this.status.dataset.state = 'updating';
-    this.timer = this.contentEl.win.setTimeout(() => {
+    const timer: PreviewTimer = { win: this.contentEl.win, id: 0 };
+    timer.id = timer.win.setTimeout(() => {
+      if (this.timer !== timer) return;
       this.timer = null;
-      void this.update(snapshot ? Promise.resolve(snapshot) : this.plugin.capture(file), ticket, started);
+      const pending = Promise.resolve().then(() => typeof snapshot === 'function' ? snapshot() : snapshot ?? this.plugin.capture(file));
+      void this.update(pending, ticket, started);
     }, 70);
+    this.timer = timer;
   }
   private async update(pending: Promise<Snapshot>, ticket: { path: string; generation: number }, started: number): Promise<void> {
     const controller = new AbortController(); this.rendering = controller;
@@ -124,10 +149,19 @@ export class ResumeView extends ItemView {
     try {
       const snapshot = await pending;
       if (!this.gate.accepts(ticket) || this.closed) return;
+      // Autosave and workspace events can repeat the same content. Attachment
+      // events invalidate this comparison even when the Markdown is unchanged.
+      if (this.current?.snapshot.path === snapshot.path && this.current.snapshot.text === snapshot.text
+        && this.renderedResourceRevision === this.resourceRevision && this.renderedDocument === this.contentEl.ownerDocument) {
+        this.status.dataset.state = 'ready'; this.metrics.skipped++;
+        return;
+      }
       result = await this.plugin.render(snapshot, this, controller.signal, this.contentEl.ownerDocument);
       if (!this.gate.accepts(ticket) || this.closed) { result.dispose(); return; }
       const anchor = this.previewAnchor();
       this.current?.dispose(); this.current = result;
+      this.renderedResourceRevision = this.resourceRevision;
+      this.renderedDocument = this.contentEl.ownerDocument;
       result.host.classList.remove('mcv-measure'); this.viewport.replaceChildren(result.host); this.fit(anchor);
       this.issues.empty();
       for (const issue of result.issues) {
@@ -141,6 +175,8 @@ export class ResumeView extends ItemView {
     } catch (error) {
       if (controller.signal.aborted || !this.gate.accepts(ticket) || this.closed) return;
       this.status.textContent = `预览未更新：${String(error instanceof Error ? error.message : error)}${this.current ? '（仍显示上一版）' : ''}`; this.status.dataset.state = 'error';
+    } finally {
+      if (this.rendering === controller) this.rendering = null;
     }
   }
   private previewAnchor(): PreviewAnchor | null {
@@ -225,7 +261,8 @@ export class ResumeView extends ItemView {
     }
   }
   async onClose(): Promise<void> {
-    this.closed = true; this.gate.invalidate(); if (this.timer) this.contentEl.win.clearTimeout(this.timer);
+    this.closed = true; this.gate.invalidate(); this.clearTimer();
     this.rendering?.abort(); this.exporting?.abort(); this.current?.dispose(); this.current = null;
+    this.renderedDocument = null;
   }
 }

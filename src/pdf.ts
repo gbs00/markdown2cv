@@ -3,7 +3,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { abortable, abortIfNeeded } from './model';
+import { abortable, abortIfNeeded } from './async';
 import { FONT_FAMILY, FONT_WEIGHTS, FONT_PROBE } from './fonts';
 
 interface ExportWindow {
@@ -37,7 +37,7 @@ export async function writePdfAtomically(bytes: Uint8Array, destination: string,
   abortIfNeeded(signal);
   const temporary = path.join(path.dirname(destination), `.${path.basename(destination)}.${randomUUID()}.tmp`);
   try {
-    await fs.writeFile(temporary, bytes, { flag: 'wx' });
+    await fs.writeFile(temporary, bytes, { flag: 'wx', signal });
     abortIfNeeded(signal);
     await fs.rename(temporary, destination);
   } finally { await fs.unlink(temporary).catch(() => {}); }
@@ -45,9 +45,10 @@ export async function writePdfAtomically(bytes: Uint8Array, destination: string,
 
 export class PdfService {
   private window: ExportWindow | null = null;
-  private printing = false;
+  private printing: AbortController | null = null;
+  constructor(private readonly getRemote: () => Remote = bridge) {}
   async choosePath(name: string): Promise<string | null> {
-    const remote = bridge();
+    const remote = this.getRemote();
     const result = await remote.dialog.showSaveDialog(remote.getCurrentWindow(), {
       title: '导出简历 PDF', defaultPath: `${name}.pdf`, filters: [{ name: 'PDF', extensions: ['pdf'] }],
     });
@@ -55,7 +56,7 @@ export class PdfService {
   }
   private getWindow(): ExportWindow {
     if (!this.window || this.window.isDestroyed()) {
-      const remote = bridge();
+      const remote = this.getRemote();
       this.window = new remote.BrowserWindow({
         show: false, width: 794, height: 1123,
         webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false, partition: 'markdown-to-cv-export' },
@@ -68,15 +69,21 @@ export class PdfService {
   async print(html: string, signal: AbortSignal): Promise<Uint8Array> {
     abortIfNeeded(signal);
     if (this.printing) throw new Error('另一个 PDF 正在生成，请完成或取消后重试。');
-    this.printing = true;
-    let win: ExportWindow;
-    try { win = this.getWindow(); } catch (error) { this.printing = false; throw error; }
-    const onAbort = () => this.dispose(); signal.addEventListener('abort', onAbort, { once: true });
+    const controller = new AbortController();
+    this.printing = controller;
+    const onAbort = () => controller.abort();
+    const onCancel = () => this.closeWindow();
+    signal.addEventListener('abort', onAbort, { once: true });
+    controller.signal.addEventListener('abort', onCancel, { once: true });
+    const pendingSignal = controller.signal;
     try {
+      const win = this.getWindow();
       // A full CJK font exceeds Chromium's navigation URL limit. Keep all document
       // data in memory and install it into a small blank page, without a temp file.
-      await abortable(win.loadURL('data:text/html;charset=utf-8,<!doctype html><meta charset="utf-8">'), signal);
-      await abortable(win.webContents.executeJavaScript(`document.open();document.write(${JSON.stringify(html)});document.close();true;`), signal);
+      await abortable(win.loadURL('data:text/html;charset=utf-8,<!doctype html><meta charset="utf-8">'), pendingSignal);
+      abortIfNeeded(pendingSignal);
+      await abortable(win.webContents.executeJavaScript(`document.open();document.write(${JSON.stringify(html)});document.close();true;`), pendingSignal);
+      abortIfNeeded(pendingSignal);
       await abortable(win.webContents.executeJavaScript(`(async () => {
         const family = ${JSON.stringify(FONT_FAMILY)};
         for (const weight of ${JSON.stringify(FONT_WEIGHTS)}) {
@@ -87,17 +94,27 @@ export class PdfService {
         await Promise.all(Array.from(document.images).map(img => img.complete ? (img.naturalWidth ? Promise.resolve() : Promise.reject(Error('Image failed'))) : new Promise((resolve,reject) => { img.onload=resolve; img.onerror=reject; })));
         document.body.getBoundingClientRect();
         return true;
-      })()`), signal);
+      })()`), pendingSignal);
+      abortIfNeeded(pendingSignal);
       if (typeof win.webContents.printToPDF !== 'function') throw new Error('当前宿主不支持 PDF 打印。');
       return await abortable(win.webContents.printToPDF({
         printBackground: true, preferCSSPageSize: true, pageSize: 'A4',
         margins: { top: 0, bottom: 0, left: 0, right: 0 }, generateTaggedPDF: true,
-      }), signal, 30000);
-    } catch (error) { this.dispose(); throw error; }
-    finally { signal.removeEventListener('abort', onAbort); this.printing = false; }
+      }), pendingSignal, 30000);
+    } catch (error) { this.closeWindow(); throw error; }
+    finally {
+      signal.removeEventListener('abort', onAbort);
+      pendingSignal.removeEventListener('abort', onCancel);
+      this.printing = null;
+    }
+  }
+  private closeWindow(): void {
+    const win = this.window;
+    this.window = null;
+    if (win && !win.isDestroyed()) win.destroy();
   }
   dispose(): void {
-    if (this.window && !this.window.isDestroyed()) this.window.destroy();
-    this.window = null;
+    this.printing?.abort();
+    this.closeWindow();
   }
 }

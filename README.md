@@ -1,8 +1,34 @@
 # Markdown to CV
 
+## Description
+
+Create resumes in Obsidian's native Markdown editor with a live A4 HTML preview and local PDF export. Organize sections freely, use a starter template, add an optional local photo, and zoom the preview without changing the exported layout. The plugin includes Source Han Sans CN for offline Chinese and English typography. The interface and starter template currently use Chinese.
+
+**Version: 0.1.2. Requires Obsidian 1.13.7 or later on desktop.** Tested on macOS; Windows and Linux have not been validated. Android and iOS are not supported.
+
+## Installation
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [GitHub release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.2).
+2. Put all three files in `<your-vault>/.obsidian/plugins/markdown-to-cv/`.
+3. Open **Settings → Community plugins** in Obsidian and enable **Markdown to CV**. To update a manual installation, disable the plugin, replace those three files, and enable it again.
+
+Alternatively, extract `markdown-to-cv-0.1.2.zip` into `.obsidian/plugins/`. GitHub's automatically generated source archives are not installable plugin packages. Community-directory review and GitHub releases are separate; see the [release status](docs/RELEASING.md).
+
+## Usage
+
+1. Click the resume ribbon icon to create a resume (`新建简历`), then edit the generated Markdown in Obsidian.
+2. Right-click the ribbon icon and choose **Preview resume** (`预览简历`) to preview the active Markdown note. The same commands are available in the command palette.
+3. Add, rename, or reorder sections. The preview updates as you edit; use **Fit width** (`适应宽度`) or 50–200% zoom to inspect it.
+4. Choose **Export PDF** (`导出 PDF`) and select a local destination. Export captures the content at the moment you click, including unsaved edits. You can keep editing or cancel the export.
+5. **Return to template** (`回到模板`) preserves an original snapshot and creates a repaired copy; it does not overwrite the source note.
+
+No account, telemetry, or cloud service is required. Notes and attachments stay local; ordinary remote Markdown images may be fetched by Obsidian, while resume photos and PDF images must be local. PDF export writes to the destination you choose, including paths outside the vault, and uses the host's non-public `@electron/remote` bridge. A host update may affect this bridge; HTML preview remains available if export fails. The bundled full font makes `main.js` larger than 5 MB, exceeding the Obsidian Sync Standard per-file limit. Source code is MIT-licensed; the bundled font retains its SIL OFL license.
+
+## 中文说明
+
 在 Obsidian 原生编辑器中写 Markdown，右侧即时预览 A4 简历，并导出本地 PDF。面向习惯 Markdown、希望自由组织内容且少调整格式的用户。
 
-当前版本：**0.1.1**。已实现桌面端功能；macOS / Obsidian 1.13.7 为验收环境。社区市场尚未上架。
+当前版本：**0.1.2**。已实现桌面端功能；macOS / Obsidian 1.13.7 为验收环境。GitHub 发布与社区目录审核状态见[发布记录](docs/RELEASING.md)。
 
 ## 使用方式
 
@@ -18,7 +44,7 @@
 
 ## 安装与更新
 
-尚未上架社区市场。请从 [0.1.1 GitHub Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.1) 下载附件并手动安装。
+手动安装请从 [0.1.2 GitHub Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.2) 下载附件。
 
 将以下三个文件放入 Vault 的 `.obsidian/plugins/markdown-to-cv/`，然后在 Obsidian 的社区插件设置中启用插件：
 
@@ -26,9 +52,9 @@
 - `manifest.json`
 - `styles.css`
 
-也可以解压 Release 附件 `markdown-to-cv-0.1.1.zip`，把其中的完整 `markdown-to-cv` 目录放到 `.obsidian/plugins/`。GitHub 自动生成的 Source code ZIP 不是插件安装包。
+也可以解压 Release 附件 `markdown-to-cv-0.1.2.zip`，把其中的完整 `markdown-to-cv` 目录放到 `.obsidian/plugins/`。GitHub 自动生成的 Source code ZIP 不是插件安装包。
 
-从 0.1.0 更新时替换上述三个文件并重新加载插件即可。0.1.1 不再读取旧的 `fonts/` 目录；无需安装系统字体或下载额外字体。最低 Obsidian 版本为 **1.13.7**。
+从旧版更新时，先停用插件，替换上述三个文件后再启用即可。自 0.1.1 起不再读取旧的 `fonts/` 目录；无需安装系统字体或下载额外字体。最低 Obsidian 版本为 **1.13.7**。
 
 ## 可选照片
 
@@ -49,6 +75,8 @@
 ## 字体与 PDF
 
 内置 Adobe **思源黑体 CN 2.005R**，正文使用 400、章节和条目标题使用 500、姓名和加粗使用 700。字体原文件约 7.71 MB，在 `main.js` 内嵌，首次预览时解码并缓存，后续编辑复用。
+
+完整字库使 `main.js` 超过 5 MB，不能通过 Obsidian Sync Standard 同步该文件；0.1.2 保留字库覆盖范围，未缩减此体积。
 
 预览和 PDF 使用同一字体、纸张样式与分页结果。官方 CN 字库不是所有 Unicode 字符的全集，极少见姓名用字可能缺字。当前宿主的 PDF 字体使用 Type3 字形及 `ActualText`：Poppler、macOS PDFKit 的文字选择、搜索和逐页内容一致性可验证；忽略 `ActualText` 的部分提取器可能误读同形汉字，不承诺所有 ATS 兼容。
 
@@ -77,11 +105,13 @@ npm ci
 npm run check:release
 ```
 
-上述命令执行官方 Obsidian ESLint 规则检查、18 项逻辑测试、类型检查、发布构建和产物校验。生成 `release/0.1.1/`：三个安装文件、手动安装 ZIP 和 `SHA256SUMS.txt`。许可证及字体来源同时保留在仓库与安装后的 `main.js` 中。
+上述命令执行 Obsidian ESLint 规则检查、自动测试、类型检查、发布构建和产物校验。生成 `release/0.1.2/`：三个安装文件、手动安装 ZIP 和 `SHA256SUMS.txt`。许可证及字体来源同时保留在仓库与安装后的 `main.js` 中。
 
-`npm run package` 单独构建安装包；`npm run package:manual` 为同一命令的兼容别名。GitHub Actions 对每次推送执行发布检查并保存构建产物，不会自动上架或发布 Release。
+`npm run package` 单独构建安装包；`npm run package:manual` 为同一命令的兼容别名。GitHub Actions 对每次推送执行发布检查并保存构建产物；推送到 `main` 时还为三个安装文件生成来源证明。正式发布使用核验后的 CI 产物，不会自动上架或发布 Release。
 
 本地开发：
+
+`npm run build` 与 `npm run build:release` 使用相同的生产参数；需要调试映射和监听更新时使用 `npm run dev`。监听模式同时更新独立的 `styles.css` 与 `manifest.json`。
 
 ```sh
 npm run build
@@ -103,6 +133,8 @@ npm run test:release-host
 ## 文档与许可
 
 - [发布步骤与当前状态](docs/RELEASING.md)
+- [0.1.2 发布验收](docs/RELEASE-0.1.2.md)
+- [架构、资源生命周期与性能验证](docs/ARCHITECTURE.md)
 - [版本变更](CHANGELOG.md)
 - [验收矩阵](docs/ACCEPTANCE.md)与[历史开发记录](docs/DEVELOPMENT.md)
 - [思源黑体来源、校验值和许可](assets/fonts/SOURCE.md)

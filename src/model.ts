@@ -28,6 +28,14 @@ function commentGuard(): (line: string) => boolean {
 /** A thin line-preserving adapter, not a Markdown parser. MarkdownRenderer owns syntax. */
 export function prepareMarkdown(text: string): Prepared {
   const lines = text.split('\n');
+  // Several fields may inspect the following paragraph. Index it once instead
+  // of allocating and scanning the rest of the document for every blank field.
+  const nextContent = new Uint32Array(lines.length);
+  let following = lines.length;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    nextContent[i] = following;
+    if (lines[i]!.trim()) following = i;
+  }
   const issues: Issue[] = [];
   let frontmatterEnd = -1;
   if (lines[0]?.trim() === '---') {
@@ -72,8 +80,7 @@ export function prepareMarkdown(text: string): Prepared {
       // Native drag/drop may place the image on the next paragraph. Consume only
       // a standalone embed, never an unrelated paragraph, field or code block.
       if (!markdown) {
-        let next = index + 1;
-        while (next < lines.length && !lines[next]!.trim()) next++;
+        const next = nextContent[index]!;
         const candidate = lines[next] ?? '';
         if (/^ {0,3}!\[/.test(candidate) && isPhotoEmbed(candidate.trim())) {
           markdown = candidate.trim(); photoContinuations.add(next);
@@ -89,7 +96,7 @@ export function prepareMarkdown(text: string): Prepared {
       return line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
     if (field && !field[2]!.trim()) {
-      const next = lines.slice(index + 1).find(x => x.trim());
+      const next = lines[nextContent[index]!];
       // A label followed by body text/list is a populated block (e.g. 工作内容).
       if (next === undefined || /^#{1,6}(?:\s|$)/.test(next) || fieldPattern.test(next)) {
         hiddenFields++;
@@ -149,24 +156,4 @@ export class RevisionGate {
     return ticket.path === this.path && ticket.generation === this.generation;
   }
   invalidate(): void { this.generation++; }
-}
-
-export function abortIfNeeded(signal?: AbortSignal): void {
-  if (signal?.aborted) throw new DOMException('操作已取消', 'AbortError');
-}
-
-export async function abortable<T>(promise: Promise<T>, signal: AbortSignal, timeoutMs = 15000): Promise<T> {
-  abortIfNeeded(signal);
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let onAbort: () => void = () => {};
-  try {
-    return await Promise.race([promise, new Promise<never>((_, reject) => {
-      onAbort = () => reject(new DOMException('操作已取消', 'AbortError'));
-      signal.addEventListener('abort', onAbort, { once: true });
-      timer = globalThis.setTimeout(() => reject(new Error('等待资源或排版超时，请检查内容后重试。')), timeoutMs);
-    })]);
-  } finally {
-    if (timer) globalThis.clearTimeout(timer);
-    signal.removeEventListener('abort', onAbort);
-  }
 }

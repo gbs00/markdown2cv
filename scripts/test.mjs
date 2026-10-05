@@ -1,8 +1,11 @@
 import { build } from 'esbuild';
-import { readdir, mkdir } from 'node:fs/promises';
+import { readdir, mkdir, rm } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+const entries = (await readdir('tests')).filter(x => x.endsWith('.test.ts')).sort().map(x => `tests/${x}`);
+if (!entries.length) throw new Error('No tests/*.test.ts files found');
+await rm('.test-build', { recursive: true, force: true });
 await mkdir('.test-build', { recursive: true });
-const entries = (await readdir('tests')).filter(x => x.endsWith('.test.ts')).map(x => `tests/${x}`);
 await build({ entryPoints: entries, bundle: true, platform: 'node', format: 'esm', external: ['@electron/remote'], outdir: '.test-build' });
 const result = spawnSync(process.execPath, ['--test', ...entries.map(x => `.test-build/${x.split('/').pop().replace('.ts', '.js')}`)], { stdio: 'inherit' });
+if (result.error) throw result.error;
 process.exitCode = result.status ?? 1;
