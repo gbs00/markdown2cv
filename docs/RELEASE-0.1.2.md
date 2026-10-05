@@ -24,16 +24,20 @@
 
 ## 0.1.2 最终发布核对
 
-以下项目在正式发布流程中完成后记录结果：
+本次正式发布核对结果：
 
 - 已通过：0.1.2 版本文件、ESLint、30 项自动测试、TypeScript、生产构建和安装包校验（`npm run check:release`）。
 - 已通过：隔离测试 Vault 只更新三个安装文件及 0.1.2 验收标记，实际宿主回归的 9 项检查全部通过。包括三文件安装、首次预览延迟加载字体、原始字体 hash、仅解码一次、离线预览、本地照片、缩放不改分页、离线 PDF 和卸载/重载。标准简历 1 页、跨页简历 2 页、照片简历 1 页。
 - 已通过：最终 0.1.2 的三份 PDF 经 Poppler/PDFKit 核对，逐页文字码点、搜索选择、链接、内嵌字体与照片、A4 和离线字体来源检查均通过。此轮未新增视觉检查，视觉证据仍为上节的架构回归。
-- 待核对：该提交的 GitHub CI 产物与本地三个安装文件一致；安装文件的 artifact attestations 可验证。
-- 待核对：发布标签、GitHub Release 与公开下载附件的版本及 hash 一致。
-- 待核对：社区后台识别 0.1.2，并记录该版本实际审核状态。
+- 已通过：[GitHub CI](https://github.com/gbs00/markdown2cv/actions/runs/37263055713) 对提交 `1741b5730331b8c07d9af888846f7c192054357d` 构建成功。下载的三个 CI 安装文件与本地验证产物逐字节一致，校验清单及 CI ZIP 核对通过。三个安装文件的 `gh attestation verify` 均成功，限定源仓库、`check.yml` 工作流、该提交的 source digest 及 GitHub 托管 runner。
+- 已发布：[0.1.2 GitHub Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.2) 于 2026-10-05 12:22:13（Asia/Shanghai）成为最新正式版，非草稿、非预发布。标签指向上述 CI 提交；五个公开附件经匿名下载与 CI 产物逐字节一致。
+- 已触发新版本检查：社区后台已识别 0.1.2（提交 `1741b57`），本次记录状态为 **Pending**，检查仍在运行。后台 **Current release 仍为 0.1.1**，0.1.2 社区审核结果与应用内更新状态尚未确认。
 
 最终版本宿主证据为 `evidence/release-0.1.2/host-results.json`；PDF 证据为同目录 `pdf-results.json`、`pdfkit-results.json`。宿主记录版本 `0.1.2`、Obsidian `1.13.7`（安装器 `1.12.4`）及 Electron `39.7.0`。它与上节保留的架构前后对比证据分开存放，不上传真实笔记或原始测试文件。
+
+CI 产物核对证据为同目录 `ci-artifact-check.json`，来源证明验证结果为 `attestation-main.json`、`attestation-styles.json`、`attestation-manifest.json`。三个安装文件合计 10,363,632 字节，其中 `main.js` 为 10,359,032 字节，超过 5 MB 的限制仍保留。
+
+公开附件核对记录为 `public-download-check.json`，社区 Pending 状态截图为 `community-review.png`，均位于同一证据目录。社区当前状态以后续后台结果为准，不把本次 GitHub 发布等同于社区审核通过。
 
 ## 安装和升级
 

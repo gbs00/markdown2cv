@@ -1,8 +1,8 @@
 # 打包与发布
 
-更新：2026-10-05。仓库：[gbs00/markdown2cv](https://github.com/gbs00/markdown2cv)。当前准备发布 **0.1.2**，安装包、CI 来源证明与公开下载校验的最终结果见 [0.1.2 发布验收](RELEASE-0.1.2.md)。历史 [0.1.1 Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.1) 保持不变。
+更新：2026-10-05。[0.1.2 GitHub Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.2) 已于北京时间 **12:22:13** 正式发布，非草稿、非预发布，标签指向 `1741b5730331b8c07d9af888846f7c192054357d`。安装包、CI 来源证明与公开下载校验均通过，详见 [0.1.2 发布验收](RELEASE-0.1.2.md)。历史 [0.1.1 Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.1) 保持不变。
 
-0.1.1 已提交社区目录，2026-10-04 的后台结果为 **Completed**，包含警告与建议；Completed 表示自动检查完成，不代表所有警告已解决。0.1.2 尚待发布后触发新版本检查。可在[审核后台](https://community.obsidian.md/account/plugins/markdown-to-cv)查看维护者记录，在[公开条目](https://community.obsidian.md/plugins/markdown-to-cv)查看目录信息。GitHub Release、目录可见性和应用内安装状态分别核对。
+已在社区后台触发 **Check for new releases**。本次记录中，0.1.2（提交 `1741b57`）的审核状态为 **Pending**，检查尚未完成；后台 **Current release 仍为 0.1.1**，不能据此宣称应用内已更新为 0.1.2。0.1.1 的旧报告为 Completed，包含警告与建议；Completed 仅表示该次自动检查完成。可在[审核后台](https://community.obsidian.md/account/plugins/markdown-to-cv)查看维护者记录，在[公开条目](https://community.obsidian.md/plugins/markdown-to-cv)查看目录信息。
 
 ## 本次调整
 
