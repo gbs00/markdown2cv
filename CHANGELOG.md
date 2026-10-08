@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.3 — 2026-10-08
 
 - Create resumes in the folder selected in the core File Explorer or Notebook Navigator; otherwise use the current note (or preview source) folder, then the vault root.
 - Add a New resume action to folder/file context menus, and stop old sidebar selections from overriding a newly opened note.

@@ -1,7 +1,7 @@
 {
   "id": "markdown-to-cv",
   "name": "Markdown to CV",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "minAppVersion": "1.13.7",
   "description": "Create resumes from Markdown with live A4 previews and local PDF export.",
   "author": "gbs00",

@@ -84,7 +84,7 @@ CV-01/02/15 新增侧栏图标右键入口，原有命令和工具栏入口继�
 
 复测：`npm run test:preview-ui`。证据见 [宿主检查](../evidence/preview-ui-20261004/host-results.json)、[PDF 元信息](../evidence/preview-ui-20261004/pdf-info.txt)、[工具栏截图](../evidence/preview-ui-20261004/toolbar-final.png)。真实连续输入、30 分钟稳定性、其他主题和用户任务测试仍待验收。
 
-## 新建简历目录补充验收（2026-10-08，未发布修复）
+## 新建简历目录补充验收（2026-10-08，0.1.3）
 
 新建位置统一用于侧栏图标、右键菜单、命令／快捷键和预览按钮：显式右键目标优先，其次最近在原生文件列表或 Notebook Navigator 选中的文件夹，再回退当前笔记（预览页使用源笔记）目录，没有上下文时使用 Vault 根目录。切换笔记清除旧的导航上下文；目标文件夹已删除时不静默改存其他位置。
 
@@ -92,6 +92,6 @@ CV-01/02/15 新增侧栏图标右键入口，原有命令和工具栏入口继�
 - macOS / Obsidian 1.14.4 / Notebook Navigator 3.4.3 的隔离 Vault 宿主检查通过：当前笔记目录、预览源目录、同名编号、原生文件列表、文件夹右键、Notebook Navigator、切换笔记和原文件全文不变。
 - 实际鼠标操作通过：原生文件列表选中“乙”后从预览按钮新建到“乙”；Notebook Navigator 选中“甲”后从侧栏图标新建到“甲”。
 - 本机 Obsidian Vault 插件已更新并重载；编辑器对象、未保存文本和活动标签核对保持不变。未在日常 Vault 创建验收笔记。
-- 本轮没有修改排版和导出，不重复声称已完成其他版本的全部验收。修复尚未包含在公开的 0.1.2 Release 中；原生文件列表选择适配需在升级宿主后继续回归。
+- 本轮没有修改排版和导出，不重复声称已完成其他版本的全部验收。本修复纳入 0.1.3，最终发布核对见 [0.1.3 发布验收](RELEASE-0.1.3.md)；原生文件列表选择适配需在升级宿主后继续回归。
 
 本地证据：`evidence/resume-location-20261008/host-results.json`、`local-install.json`。运行宿主脚本：`node scripts/resume-location-host-tests.mjs <隔离 Vault 配置 JSON>`；测试库需要启用 Notebook Navigator。原始证据和生成测试文件不入库。

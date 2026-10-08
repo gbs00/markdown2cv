@@ -1,6 +1,6 @@
 {
   "name": "markdown-to-cv",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "Create resumes from Markdown with live A4 previews and local PDF export.",
