@@ -1,4 +1,4 @@
-import { Plugin, MarkdownView, TFile, Notice, Menu, normalizePath } from 'obsidian';
+import { Plugin, MarkdownView, TFile, TFolder, View, Notice, Menu, normalizePath } from 'obsidian';
 import type { Editor, Component } from 'obsidian';
 import template from './template.md';
 import { ResumeView, VIEW_TYPE } from './view';
@@ -9,6 +9,7 @@ import { ResumeFonts } from './fonts';
 import { readBundledFont, readBundledFontCss } from './bundled-font';
 import { renderResume } from './render';
 import type { RenderedResume } from './render';
+import { ResumeLocation } from './resume-location';
 
 export default class MarkdownToCvPlugin extends Plugin {
   readonly pdf = new PdfService();
@@ -17,7 +18,9 @@ export default class MarkdownToCvPlugin extends Plugin {
   private editSequence = 0;
   private repairBusy = false;
   private ribbonMenu: Menu | null = null;
+  private creationLocation!: ResumeLocation;
   async onload(): Promise<void> {
+    this.creationLocation = new ResumeLocation(this.app);
     this.fonts = new ResumeFonts(readBundledFont, readBundledFontCss);
     this.register(() => this.fonts.dispose());
     this.registerView(VIEW_TYPE, leaf => new ResumeView(leaf, this));
@@ -42,6 +45,8 @@ export default class MarkdownToCvPlugin extends Plugin {
       if (file?.extension === 'md') await this.repair(file);
     }) });
     this.registerEvent(this.app.workspace.on('file-menu', (menu, file) => {
+      const folder = file instanceof TFolder ? file : file.parent;
+      if (folder) menu.addItem(item => item.setTitle('新建简历').setIcon('file-plus').onClick(() => this.run(() => this.createResume(folder))));
       if (file instanceof TFile && file.extension === 'md') menu.addItem(item => item.setTitle('打开简历预览').setIcon('file-user').onClick(() => this.run(() => this.openPreview(file))));
     }));
     this.registerEvent(this.app.workspace.on('editor-change', (editor, info) => {
@@ -53,11 +58,14 @@ export default class MarkdownToCvPlugin extends Plugin {
       }
     }));
     this.registerEvent(this.app.workspace.on('file-open', file => {
+      this.creationLocation.activate(null);
       if (file?.extension === 'md') this.views().forEach(view => view.bindFile(file));
     }));
     this.registerEvent(this.app.workspace.on('active-leaf-change', leaf => {
+      this.creationLocation.activate(leaf?.view ?? null);
       if (leaf?.view instanceof MarkdownView && leaf.view.file?.extension === 'md') this.views().forEach(view => view.bindFile((leaf.view as MarkdownView).file!));
     }));
+    this.app.workspace.onLayoutReady(() => this.creationLocation.activate(this.app.workspace.getActiveViewOfType(View)));
     this.registerEvent(this.app.vault.on('create', file => { this.views().forEach(view => view.resourceChanged(file.path)); }));
     this.registerEvent(this.app.vault.on('modify', file => { this.views().forEach(view => {
       if (view.source === file) view.schedule(); else view.resourceChanged(file.path);
@@ -122,9 +130,11 @@ export default class MarkdownToCvPlugin extends Plugin {
     const view = await this.openPreview(file);
     await view.exportPdf(undefined, snapshot);
   }
-  async createResume(): Promise<TFile> {
-    const parent = this.app.workspace.getActiveFile()?.parent?.path ?? '';
-    const file = await this.createUnique(parent, '新简历', template);
+  async createResume(folder?: TFolder): Promise<TFile> {
+    this.creationLocation.activate(this.app.workspace.getActiveViewOfType(View));
+    const source = this.activeResumeFile() ?? this.app.workspace.getActiveFile();
+    const parent = this.creationLocation.resolve(source, folder);
+    const file = await this.createUnique(parent.path, '新简历', template);
     await this.app.workspace.getLeaf('tab').openFile(file, { state: { mode: 'source' } });
     await this.openPreview(file); return file;
   }

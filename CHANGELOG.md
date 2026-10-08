@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Create resumes in the folder selected in the core File Explorer or Notebook Navigator; otherwise use the current note (or preview source) folder, then the vault root.
+- Add a New resume action to folder/file context menus, and stop old sidebar selections from overriding a newly opened note.
+
 ## 0.1.2 — 2026-10-05
 
 - Coalesce editor reads and skip repeated previews when content, resources, and owning document are unchanged.

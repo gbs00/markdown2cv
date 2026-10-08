@@ -22,6 +22,8 @@ Alternatively, extract `markdown-to-cv-0.1.2.zip` into `.obsidian/plugins/`. Git
 4. Choose **Export PDF** (`导出 PDF`) and select a local destination. Export captures the content at the moment you click, including unsaved edits. You can keep editing or cancel the export.
 5. **Return to template** (`回到模板`) preserves an original snapshot and creates a repaired copy; it does not overwrite the source note.
 
+In the development version, new resumes use the folder you just selected in File Explorer or Notebook Navigator. Otherwise they use the current note's folder (the source note when viewing a resume), or the vault root if no note is open. Switching to another note clears the previous sidebar context. You can also right-click a folder and choose **New resume** (`新建简历`) to set the destination explicitly. These directory fixes are not included in the published 0.1.2 release.
+
 No account, telemetry, or cloud service is required. Notes and attachments stay local; ordinary remote Markdown images may be fetched by Obsidian, while resume photos and PDF images must be local. PDF export writes to the destination you choose, including paths outside the vault, and uses the host's non-public `@electron/remote` bridge. A host update may affect this bridge; HTML preview remains available if export fails. The bundled full font makes `main.js` larger than 5 MB, exceeding the Obsidian Sync Standard per-file limit. Source code is MIT-licensed; the bundled font retains its SIL OFL license.
 
 ## 中文说明
@@ -43,6 +45,8 @@ No account, telemetry, or cloud service is required. Notes and attachments stay 
 “回到模板”会保存点击时的原文快照，并另建修复副本，原笔记不被覆盖。只修复能确定的标题空格、字段加粗标记等损坏；不猜测内容归属，不补回用户删除的章节。
 
 ## 安装与更新
+
+开发版的新建位置按当前操作判断：刚在文件列表或 Notebook Navigator 选中的文件夹 → 当前笔记／预览源笔记所在文件夹 → Vault 根目录。切换笔记后不沿用旧的侧栏选择；也可在文件夹右键菜单点击“新建简历”。同名文件自动编号，不覆盖已有笔记。此修复尚未包含在公开的 0.1.2 中。
 
 手动安装请从 [0.1.2 GitHub Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.2) 下载附件。
 
