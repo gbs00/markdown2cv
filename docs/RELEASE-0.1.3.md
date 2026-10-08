@@ -16,13 +16,18 @@
 - 已通过：`npm run check:release`，包含 ESLint、37 项测试、TypeScript、生产构建、版本／字体／许可及 ZIP 完整性检查。
 - 已通过：0.1.3 三文件安装在 macOS / Obsidian 1.14.4 隔离 Vault 的 9 项宿主检查，包含首次预览延迟加载字体、单次解码与缓存、断网预览／照片／真实 PDF、150% 缩放不改分页、卸载和重载。标准、长简历、照片简历分别为 1、2、1 页。
 - 已通过：三份 PDF 的 Poppler 与 macOS PDFKit 检查；逐页文字码点、搜索与选择、链接、字体／照片内嵌、A4 尺寸与预览页数一致。未把此轮元数据／文本核对表述为新增人工视觉验收。
-- 待完成：GitHub CI、三个安装文件来源证明、最终公开附件下载核对及社区新版本检查。
+- 已通过：[GitHub CI](https://github.com/gbs00/markdown2cv/actions/runs/37799296693) 对提交 `e1bb1012e5a873a602af43454df12f8a57aef903` 构建成功。三个本地安装文件的 `gh attestation verify` 均成功，限定 `gbs00/markdown2cv`、`check.yml`、该提交 source digest 及 GitHub 托管 runner，确认文件哈希对应这次 CI 构建。
+- 已发布：[0.1.3 GitHub Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.3) 于 2026-10-08 23:25:28（Asia/Shanghai）成为最新正式版，非草稿、非预发布；标签指向上述 CI 提交。三个安装文件、手动 ZIP 及 SHA256SUMS 共五个附件，上传后的服务端 digest 和匿名公开下载均与本地已验收文件一致，ZIP 内三文件也逐字节一致。
+- 已触发社区新版本检查：后台识别 0.1.3（`e1bb101`）并显示 **Pending**，Current release 仍为 0.1.2；此记录不表示 0.1.3 社区检查完成或应用内更新已经可用。
+- 本机插件已更新并重载为 0.1.3，编辑器对象、未保存文本和活动标签均保持；没有在日常 Vault 创建验收笔记。
+
+本次 CI artifact 压缩包下载发生连接中断（`IncompleteRead`），未将其记为下载核对通过。实际上传使用上述已通过 CI 来源证明的本地副本；三个安装文件对应经 CI 签名的相同 SHA-256，最终公开附件又完成独立下载核对。来源证明、上传 digest 和公开附件记录分别见本地证据目录中的 `attestation-main.json`、`attestation-manifest.json`、`attestation-styles.json`、`upload-check.json` 和 `public-download-check.json`。社区状态保存在 `community-review.txt`／`community-review.png`，本机更新记录为 `local-install.json`。
 
 最终版本宿主和 PDF 证据位于本地 `evidence/release-0.1.3/host-results.json`、`pdf-results.json`、`pdfkit-results.json`，不入库。
 
 ## 安装和升级
 
-[0.1.3 Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.3) 发布后提供 `main.js`、`manifest.json`、`styles.css` 及手动安装 ZIP。停用插件后替换 `.obsidian/plugins/markdown-to-cv/` 内的三个文件，再启用即可。简历 Markdown 无需迁移。
+[0.1.3 Release](https://github.com/gbs00/markdown2cv/releases/tag/0.1.3) 提供 `main.js`、`manifest.json`、`styles.css` 及手动安装 ZIP。停用插件后替换 `.obsidian/plugins/markdown-to-cv/` 内的三个文件，再启用即可。简历 Markdown 无需迁移。
 
 ## 支持边界
 
